@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .user-info {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Личный кабинет</h1>
+    
+    <div class="user-info">
+        <p>Добро пожаловать в защищенную зону!</p>
+        <button onclick="handleLogout()">Выйти</button>
+    </div>
+    
+    <div id="protected-data">
+        <h3>Защищенные данные:</h3>
+        <div id="data-content">Загрузка...</div>
+    </div>
+
+    <!-- Подключаем наш JavaScript файл -->
+    <script src="../static/JS/auth.js"></script>
+    
+    <script>
+        // Проверяем авторизацию при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!authService.isAuthenticated()) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Загружаем защищенные данные
+            loadProtectedData();
+        });
+        
+        async function loadProtectedData() {
+            const data = await fetchProtectedData();
+            if (data) {
+                document.getElementById('data-content').innerHTML = 
+                    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } else {
+                document.getElementById('data-content').innerHTML = 
+                    'Не удалось загрузить данные';
+            }
+        }
+    </script>
+</body>
+</html>
