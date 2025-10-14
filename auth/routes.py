@@ -10,8 +10,6 @@ import os
 
 auth_bp = Blueprint('auth', __name__, template_folder=os.path.dirname(os.path.abspath(__file__)) + '/../../insightroom-frontend/pages')
 
-black_list = set()
-
 @auth_bp.route('/register', methods=['POST'])
 def register():
     """Регистрация нового пользователя"""
@@ -83,7 +81,6 @@ def login():
     except Exception as e:
         return jsonify({'error': f'Ошибка сервера: {str(e)}'}), 500
 
-
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
@@ -139,9 +136,3 @@ def get_all_users():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-
-@auth_bp.route('/test')
-@jwt_required()
-def test_page():
-    return "Все ОКЕЙ"
