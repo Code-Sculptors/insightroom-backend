@@ -96,6 +96,7 @@ class User:
         conn.commit()
         cursor.close()
         conn.close()
+
     def delete(self):
         if self.user_id:
             User.delete_user_by_id(self.user_id)
@@ -115,9 +116,6 @@ class User:
     # conn.close()
 
     #add_user('biba', 'eeed', 'ghjfk', '8(456)987-9900','2025-01-19 03:14:07.000', 'ddd','1')
-
-
-
 
 #delete_user_id(7)
 
@@ -198,8 +196,6 @@ class Notification:
             conn.close()
 
 
-
-
 def get_contact_id(id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -211,7 +207,6 @@ def get_contact_id(id):
         print(f"Уведомление с ID {id} не найдено")
     cursor.close()
     conn.close()
-
 
 def get_all_contacts():
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -226,7 +221,6 @@ def get_all_contacts():
     cursor.close()
     conn.close()
 
-
 def add_contact(user_id, contact_name):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -234,7 +228,6 @@ def add_contact(user_id, contact_name):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def delete_contact_id(id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -256,7 +249,6 @@ def get_room_id(id):
     cursor.close()
     conn.close()
 
-
 def get_all_rooms():
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -270,7 +262,6 @@ def get_all_rooms():
     cursor.close()
     conn.close()
 
-
 def add_room(activation_time, message_file, settings_file):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -278,7 +269,6 @@ def add_room(activation_time, message_file, settings_file):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def delete_room_id(id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -300,7 +290,6 @@ def get_rooms_info_id(id):
     cursor.close()
     conn.close()
 
-
 def get_all_rooms_info():
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -314,7 +303,6 @@ def get_all_rooms_info():
     cursor.close()
     conn.close()
 
-
 def add_room(description, room_name, room_url):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -323,7 +311,6 @@ def add_room(description, room_name, room_url):
     cursor.close()
     conn.close()
 
-
 def delete_rooms_info_id(id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -331,7 +318,6 @@ def delete_rooms_info_id(id):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def get_user_role_id(user_id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -344,7 +330,6 @@ def get_user_role_id(user_id):
         print(f"комната с ID {id} не найдена")
     cursor.close()
     conn.close()
-
 
 def get_all_user_roles():
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -359,7 +344,6 @@ def get_all_user_roles():
     cursor.close()
     conn.close()
 
-
 def add_user_role(room_id, user_id, user_role, join_time, leave_time):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -368,7 +352,6 @@ def add_user_role(room_id, user_id, user_role, join_time, leave_time):
     cursor.close()
     conn.close()
 
-
 def delete_user_role(room_id, user_id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -376,7 +359,6 @@ def delete_user_role(room_id, user_id):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def get_auth_id(id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -389,7 +371,6 @@ def get_auth_id(id):
         print(f"комната с ID {id} не найдена")
     cursor.close()
     conn.close()
-
 
 def get_all_auth():
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -404,7 +385,6 @@ def get_all_auth():
     cursor.close()
     conn.close()
 
-
 def add_auth(login, password):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -412,7 +392,6 @@ def add_auth(login, password):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def delete_auth(id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -448,7 +427,6 @@ def get_all_tokens():
     cursor.close()
     conn.close()
 
-
 def add_token(token, expirtion_time):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -456,7 +434,6 @@ def add_token(token, expirtion_time):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def delete_token(token):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
@@ -478,7 +455,6 @@ def get_file_id(id):
     cursor.close()
     conn.close()
 
-
 def get_all_files():
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -492,7 +468,6 @@ def get_all_files():
     cursor.close()
     conn.close()
 
-
 def add_file(file_path):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
     cursor = conn.cursor()
@@ -500,7 +475,6 @@ def add_file(file_path):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def delete_file(id):
     conn = psycopg2.connect(dbname="my_test", host="localhost", user="aliska", password="boss", port="5432")
