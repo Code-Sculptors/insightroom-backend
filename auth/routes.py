@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from flask_jwt_extended import (
     create_access_token, create_refresh_token, 
     jwt_required, get_jwt_identity, get_jwt
@@ -10,10 +10,8 @@ import os
 
 auth_bp = Blueprint('auth', __name__, template_folder=os.path.dirname(os.path.abspath(__file__)) + '/../../insightroom-frontend/pages')
 
-black_list = set()
-
 @auth_bp.route('/register', methods=['POST'])
-def register():
+def register() -> Response:
     """Регистрация нового пользователя"""
     try:
         data = request.json
@@ -46,7 +44,7 @@ def register():
         return jsonify({'error': f'Ошибка сервера: {str(e)}'}), 500
 
 @auth_bp.route('/login', methods=['POST'])
-def login():
+def login() -> Response:
     """Аутентификация пользователя"""
     try:
         username = request.json.get('username')
@@ -83,10 +81,9 @@ def login():
     except Exception as e:
         return jsonify({'error': f'Ошибка сервера: {str(e)}'}), 500
 
-
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
-def refresh():
+def refresh() -> Response:
     """Обновление access token"""
     current_user = get_jwt_identity()
     new_access_token = create_access_token(
@@ -101,7 +98,7 @@ def refresh():
 
 @auth_bp.route('/protected-data')
 @jwt_required()
-def protected_data():
+def protected_data() -> Response:
     """Защищенные данные"""
     current_user = get_jwt_identity()
     print("!!!!!!!!!!", current_user)
@@ -113,7 +110,7 @@ def protected_data():
 
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()
-def logout():
+def logout() -> Response:
     """Выход из системы"""
     access_token = request.headers.get('Authorization', '').replace('Bearer ', '')
     refresh_token = request.get_json().get('refresh_token')
@@ -124,7 +121,7 @@ def logout():
 
 @auth_bp.route('/admin/users', methods=['GET'])
 @jwt_required()
-def get_all_users():
+def get_all_users() -> Response:
     """Получение списка всех пользователей (только для админа)"""
     try:
         # Проверяем права администратора
@@ -139,9 +136,3 @@ def get_all_users():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-
-@auth_bp.route('/test')
-@jwt_required()
-def test_page():
-    return "Все ОКЕЙ"
