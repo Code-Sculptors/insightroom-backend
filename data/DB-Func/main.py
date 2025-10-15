@@ -23,7 +23,7 @@ class Notification:
 
 class Contact:
     def __init__(self, contact_id=None, user_id=None, contact_name=None):
-        self.contact_id= contact_id
+        self.contact_id = contact_id
         self.user_id = user_id
         self.contact_name = contact_name
 
@@ -42,28 +42,27 @@ class Room:
         self.settings_file = settings_file
 
 class UserRole:
-    def __init__(self, room_id=None, user_id=None, user_role=None, join_time=None, leave_time = None):
+    def __init__(self, room_id=None, user_id=None, user_role=None, join_time=None, leave_time=None):
         self.room_id = room_id
-        self.user_id= user_id
+        self.user_id = user_id
         self.user_role = user_role
         self.join_time = join_time
         self.leave_time = leave_time
 
-
 class Auth:
     def __init__(self, user_id=None, login=None, hash=None):
-        self.user_id= user_id
+        self.user_id = user_id
         self.login = login
         self.hash = hash
 
 class File:
     def __init__(self, file_id=None, file_path=None):
-        self.file_id= file_id
+        self.file_id = file_id
         self.file_path = file_path
 
 class Tokens:
-    def __init__(self, token=None,expiration_time =None):
-        self.token= token
+    def __init__(self, token=None,expiration_time=None):
+        self.token = token
         self.expiration_time = expiration_time
 
 class DataBaseException(Exception):
@@ -75,12 +74,14 @@ class DataBase:
     user = None
     password = None
     port = None
+
     def __init__(self, dbname = "my_test", host = "localhost", user = "aliska", password = "boss", port = "5432"):
         self.dbname = dbname
         self.host = host
         self.user = user
         self.password = password
         self.port = port
+
     @classmethod
     def get_connection(cls):
         """
@@ -98,22 +99,22 @@ class DataBase:
         )
 
     @staticmethod
-    def get_user(user:User)->User|None:
+    def get_user(user_id: int) -> User | None:
         """
-            Возвращает объект пользователя по его идентифигатору
-            Args:
-                user (User): объект класса User с установленным user_id
-            Returns:
-                User: искомый пользователь, если найдена такая запись
-                None:если запись о пользователе не найдена
-            """
+        Возвращает объект пользователя по его идентифигатору
+        Args:
+            user (User): объект класса User с установленным user_id
+        Returns:
+            User: искомый пользователь, если найдена такая запись
+            None:если запись о пользователе не найдена
+        """
         conn = None
         cursor = None
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
 
-            cursor.execute("SELECT * FROM users.users WHERE user_id = %s", (user.user_id,))
+            cursor.execute("SELECT * FROM users.users WHERE user_id = %s", (user_id,))
             result = cursor.fetchone()
 
             if result:
@@ -129,7 +130,7 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def get_all_users()-> list[User]|[]:
+    def get_all_users() -> list[User]:
         """
         Возвращает список всех пользователей
 
@@ -157,18 +158,18 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def delete_user(user: User) -> None:
+    def delete_user(user_id: int) -> None:
         """
         Удаляет пользователя из базы данных
         Args:
-            user (User): объект User с установленным user_id для удаления
+            user_id (int): user_id для удаления
         """
         conn = None
         cursor = None
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM users.users WHERE user_id = %s", (user.user_id,))
+            cursor.execute("DELETE FROM users.users WHERE user_id = %s", (user_id,))
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)
@@ -240,12 +241,12 @@ class DataBase:
 
 
     @staticmethod
-    def get_notification(notification: Notification) -> Notification | None:
+    def get_notification(notification_id: int) -> Notification | None:
         """
         Возвращает объект уведомления по его идентификатору
 
         Args:
-            notification (Notification): объект Notification с установленным notification_id
+            notification_id (int): id уведомления, которое нужно получить
 
         Returns:
             Notification: искомое уведомление, если найдена запись
@@ -257,7 +258,7 @@ class DataBase:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM users.notification WHERE notification_id = %s",
-                           (notification.notification_id,))
+                           (notification_id,))
             result = cursor.fetchone()
 
             if result:
@@ -303,19 +304,19 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def delete_notification(notification: Notification) -> None:
+    def delete_notification(notification_id: int) -> None:
         """
         Удаляет уведомление по id из базы данных
 
         Args:
-            notification (Notification): объект Notification с установленным notification_id для удаления
+            notification_id (int): ID уведомнения, которое нужно удалить
         """
         conn = None
         cursor = None
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM users.notification WHERE notification_id = %s", (notification.notification_id,))
+            cursor.execute("DELETE FROM users.notification WHERE notification_id = %s", (notification_id, ))
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)
@@ -383,12 +384,12 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def get_contact(contact: Contact) -> Contact | None:
+    def get_contact(contact_id: int) -> Contact | None:
         """
         Возвращает объект контакта по его идентификатору
 
         Args:
-            contact (Contact): объект Contact с установленным contact_id
+            contact_id (int): ID контакта, который нужно получить
 
         Returns:
             Contact: искомый контакт, если найдена запись
@@ -399,7 +400,7 @@ class DataBase:
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users.contacts WHERE contact_id = %s", (contact.contact_id,))
+            cursor.execute("SELECT * FROM users.contacts WHERE contact_id = %s", (contact_id, ))
             result = cursor.fetchone()
 
             if result:
@@ -524,12 +525,12 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def get_room(room: Room) -> Room | None:
+    def get_room(room_id: int) -> Room | None:
         """
         Возвращает объект комнаты по его идентификатору
 
         Args:
-            room (Room): объект Room с установленным room_id
+            room_id (int): ID комнаты, объект которой нужно получить
 
         Returns:
             Room: искомая комната, если найдена запись
@@ -540,7 +541,7 @@ class DataBase:
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM rooms.rooms WHERE room_id = %s", (room.room_id,))
+            cursor.execute("SELECT * FROM rooms.rooms WHERE room_id = %s", (room_id, ))
             result = cursor.fetchone()
 
             if result:
@@ -654,7 +655,7 @@ class DataBase:
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM rooms.rooms WHERE room_id = %s", (room.room_id,))
+            cursor.execute("DELETE FROM rooms.rooms WHERE room_id = %s", (room.room_id, ))
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)
@@ -665,12 +666,12 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def get_room_info(room_info: RoomInfo) -> RoomInfo | None:
+    def get_room_info(room_id: int) -> RoomInfo | None:
         """
         Возвращает объект информации о комнате по его идентификатору
 
         Args:
-            room_info (RoomInfo): объект RoomInfo с установленным room_id
+            room_id (int): ID комнаты, информацию о которой нужно получить
 
         Returns:
             RoomInfo: искомая информация о комнате, если найдена запись
@@ -681,7 +682,7 @@ class DataBase:
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM rooms.rooms_info WHERE room_id = %s", (room_info.room_id,))
+            cursor.execute("SELECT * FROM rooms.rooms_info WHERE room_id = %s", (room_id, ))
             result = cursor.fetchone()
 
             if result:
@@ -785,19 +786,20 @@ class DataBase:
 
 
     @staticmethod
-    def delete_room_info(room_info: RoomInfo) -> None:
+    def delete_room_info(room_id: int) -> None:
         """
         Удаляет информацию о комнате из базы данных
 
         Args:
-            room_info (RoomInfo): объект RoomInfo с установленным room_id для удаления
+            room_id (int): ID комнаты, объект которой нужно удалить
+
         """
         conn = None
         cursor = None
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM rooms.rooms_info WHERE room_id = %s", (room_info.room_id,))
+            cursor.execute("DELETE FROM rooms.rooms_info WHERE room_id = %s", (room_id, ))
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)
@@ -808,7 +810,7 @@ class DataBase:
                 conn.close()
 
 
-#####ПОСМОТРЕТЬ SQL ЗАПРОС ЕСЛИ ПЕРЕДАВАТЬ ЮЗЕРА А НЕ ЮЗЕРРОЛ
+    #####ПОСМОТРЕТЬ SQL ЗАПРОС ЕСЛИ ПЕРЕДАВАТЬ ЮЗЕРА А НЕ ЮЗЕРРОЛ
     @staticmethod
     def get_user_role(user_role: UserRole) -> UserRole | None:
         """
@@ -952,12 +954,13 @@ class DataBase:
 #######ПРО ПАРОЛЬ ПОСМОТРЕТЬ
 
     @staticmethod
-    def get_auth(auth: Auth) -> Auth | None:
+    def get_auth(user_id: int) -> Auth | None:
         """
         Возвращает объект аутентификации по идентификатору пользователя
 
         Args:
-            auth (Auth): объект Auth с установленным user_id
+            user_id (int): ID пользователя, объект Auth которого нужно получить
+
 
         Returns:
             Auth: искомая запись аутентификации, если найдена
@@ -968,7 +971,7 @@ class DataBase:
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM technical.auth WHERE user_id = %s", (auth.user_id,))
+            cursor.execute("SELECT * FROM technical.auth WHERE user_id = %s", (user_id,))
             result = cursor.fetchone()
 
             if result:
@@ -1262,6 +1265,7 @@ class DataBase:
                 cursor.close()
             if conn:
                 conn.close()
+                
     @staticmethod
     def add_token(token: Tokens) -> None:
         """
