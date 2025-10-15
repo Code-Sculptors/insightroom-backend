@@ -1,0 +1,1435 @@
+
+import psycopg2
+from datetime import datetime
+
+class User:
+    def __init__(self, user_id=None, username=None, avatar_url=None, email=None,
+                 phone=None, last_online=None, settings_file=None, verified=False):
+        self.user_id = user_id
+        self.username = username
+        self.avatar_url = avatar_url
+        self.email = email
+        self.phone = phone
+        self.last_online = last_online
+        self.settings_file = settings_file
+        self.verified = verified
+
+class Notification:
+    def __init__(self, notification_id=None, notification_time=None, description=None, room_url=None):
+        self.notification_id = notification_id
+        self.notification_time = notification_time
+        self.description = description
+        self.room_url = room_url
+
+class Contact:
+    def __init__(self, contact_id=None, user_id=None, contact_name=None):
+        self.contact_id = contact_id
+        self.user_id = user_id
+        self.contact_name = contact_name
+
+class RoomInfo:
+    def __init__(self, room_id=None, description=None, room_name=None, room_url=None):
+        self.room_id = room_id
+        self.description = description
+        self.room_name = room_name
+        self.room_url = room_url
+
+class Room:
+    def __init__(self, room_id=None, activation_time=None, message_file=None, settings_file=None):
+        self.room_id = room_id
+        self.activation_time = activation_time
+        self.message_file = message_file
+        self.settings_file = settings_file
+
+class UserRole:
+    def __init__(self, room_id=None, user_id=None, user_role=None, join_time=None, leave_time=None):
+        self.room_id = room_id
+        self.user_id = user_id
+        self.user_role = user_role
+        self.join_time = join_time
+        self.leave_time = leave_time
+
+class Auth:
+    def __init__(self, user_id=None, login=None, hash=None):
+        self.user_id = user_id
+        self.login = login
+        self.hash = hash
+
+class File:
+    def __init__(self, file_id=None, file_path=None):
+        self.file_id = file_id
+        self.file_path = file_path
+
+class Tokens:
+    def __init__(self, token=None,expiration_time=None):
+        self.token = token
+        self.expiration_time = expiration_time
+
+class DataBaseException(Exception):
+    pass
+
+class DataBase:
+    dbname = None
+    host = None
+    user = None
+    password = None
+    port = None
+
+    def __init__(self, dbname = "my_test", host = "localhost", user = "aliska", password = "boss", port = "5432"):
+        self.dbname = dbname
+        self.host = host
+        self.user = user
+        self.password = password
+        self.port = port
+
+    @classmethod
+    def get_connection(cls):
+        """
+        Создает и возвращает соединение с базой данных
+
+        Returns:
+            psycopg2.connection: объект соединения с БД
+        """
+        return psycopg2.connect(
+            dbname= cls.dbname,
+            host= cls.host,
+            user=cls.user,
+            password=cls.password,
+            port=cls.port
+        )
+
+    @staticmethod
+    def get_user(user_id: int) -> User | None:
+        """
+        Возвращает объект пользователя по его идентифигатору
+        Args:
+            user (User): объект класса User с установленным user_id
+        Returns:
+            User: искомый пользователь, если найдена такая запись
+            None:если запись о пользователе не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM users.users WHERE user_id = %s", (user_id,))
+            result = cursor.fetchone()
+
+            if result:
+                return User(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_all_users() -> list[User]:
+        """
+        Возвращает список всех пользователей
+
+        Returns:
+            list[User]: список объектов User
+            list: пустой список, если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users.users")
+            results = cursor.fetchall()
+            if results:
+                return [User(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def delete_user(user_id: int) -> None:
+        """
+        Удаляет пользователя из базы данных
+        Args:
+            user_id (int): user_id для удаления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM users.users WHERE user_id = %s", (user_id,))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def update_user(user: User) -> None:
+        """
+        Обновляет данные пользователя в базе данных
+
+        Args:
+            user (User): объект User с установленным user_id и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users.users 
+                SET username=%s, avatar_url=%s, email=%s, phone=%s, 
+                    last_online=%s, settings_file=%s, verified=%s 
+                WHERE user_id=%s
+            """, (user.username, user.avatar_url, user.email, user.phone,
+                  user.last_online, user.settings_file, user.verified, user.user_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def add_user(user: User) -> None:
+        """
+        Добавляет нового пользователя в базу данных
+
+        Args:
+            user (User): объект User с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO users.users 
+                (username, avatar_url, email, phone, last_online, settings_file, verified) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING user_id
+            """, (user.username, user.avatar_url, user.email, user.phone,
+                  user.last_online, user.settings_file, user.verified))
+            user.user_id = cursor.fetchone()[0]
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+
+    @staticmethod
+    def get_notification(notification_id: int) -> Notification | None:
+        """
+        Возвращает объект уведомления по его идентификатору
+
+        Args:
+            notification_id (int): id уведомления, которое нужно получить
+
+        Returns:
+            Notification: искомое уведомление, если найдена запись
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users.notification WHERE notification_id = %s",
+                           (notification_id,))
+            result = cursor.fetchone()
+
+            if result:
+                return Notification(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def get_all_notifications() -> list[Notification]:
+        """
+        Возвращает список всех уведомлений
+
+        Returns:
+            list[Notification]: список объектов Notification
+            list: пустой список, если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users.notification")
+            results = cursor.fetchall()
+            if results:
+                return [Notification(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise DataBaseException(ex)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def delete_notification(notification_id: int) -> None:
+        """
+        Удаляет уведомление по id из базы данных
+
+        Args:
+            notification_id (int): ID уведомнения, которое нужно удалить
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM users.notification WHERE notification_id = %s", (notification_id, ))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def update_notification(notification: Notification) -> None:
+        """
+        Обновляет данные уведомления в базе данных
+
+        Args:
+            notification (Notification): объект Notification с установленным notification_id и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                    UPDATE users.notification 
+                    SET notification_time=%s, description=%s, room_url=%s
+                    WHERE notification_id=%s
+                """, (notification.notification_time, notification.description, notification.room_url,
+                      notification.notification_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def add_notification(notification: Notification) -> None:
+        """
+        Добавляет новое уведомление в базу данных
+
+        Args:
+            notification (Notification): объект Notification с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                    INSERT INTO users.notification 
+                    (notification_time, description, room_url) 
+                    VALUES (%s, %s, %s)
+                    RETURNING notification_id
+                """, (notification.notification_time, notification.description, notification.room_url))
+            notification.notification_id = cursor.fetchone()[0]
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_contact(contact_id: int) -> Contact | None:
+        """
+        Возвращает объект контакта по его идентификатору
+
+        Args:
+            contact_id (int): ID контакта, который нужно получить
+
+        Returns:
+            Contact: искомый контакт, если найдена запись
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users.contacts WHERE contact_id = %s", (contact_id, ))
+            result = cursor.fetchone()
+
+            if result:
+                return Contact(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def get_all_contacts() -> list[Contact]:
+        """
+        Возвращает список всех контактов
+
+        Returns:
+            list[Contact]: список объектов Contact
+            list: пустой список, если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users.contacts")
+            results = cursor.fetchall()
+            if results:
+                return [Contact(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def update_contact(contact: Contact) -> None:
+        """
+        Обновляет данные контакта в базе данных
+
+        Args:
+            contact (Contact): объект Contact с установленным contact_id и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users.contacts 
+                SET user_id=%s, contact_name=%s
+                WHERE contact_id=%s
+            """, (contact.user_id, contact.contact_name, contact.contact_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def add_contact(contact: Contact) -> None:
+        """
+        Добавляет новый контакт в базу данных
+
+        Args:
+            contact (Contact): объект Contact с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO users.contacts 
+                (user_id, contact_name) 
+                VALUES (%s, %s)
+                RETURNING contact_id
+            """, (contact.user_id, contact.contact_name))
+            contact.contact_id = cursor.fetchone()[0]
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def delete_contact(contact: Contact) -> None:
+        """
+        Удаляет контакт из базы данных
+
+        Args:
+            contact (Contact): объект Contact с установленным contact_id для удаления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM users.contacts WHERE contact_id = %s", (contact.contact_id,))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_room(room_id: int) -> Room | None:
+        """
+        Возвращает объект комнаты по его идентификатору
+
+        Args:
+            room_id (int): ID комнаты, объект которой нужно получить
+
+        Returns:
+            Room: искомая комната, если найдена запись
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM rooms.rooms WHERE room_id = %s", (room_id, ))
+            result = cursor.fetchone()
+
+            if result:
+                return Room(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def get_all_rooms() -> list[Room]:
+        """
+        Возвращает список всех комнат
+
+        Returns:
+            list[Room]: список объектов Room
+            list: пустой список, если запись не найена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM rooms.rooms")
+            results = cursor.fetchall()
+            if results:
+                return [Room(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def update_room(room: Room) -> None:
+        """
+        Обновляет данные комнаты в базе данных
+
+        Args:
+            room (Room): объект Room с установленным room_id и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE rooms.rooms 
+                SET activation_time=%s, message_file=%s, settings_file=%s 
+                WHERE room_id=%s
+            """, (room.activation_time, room.message_file, room.settings_file, room.room_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def add_room(room: Room) -> None:
+        """
+        Добавляет новую комнату в базу данных
+
+        Args:
+            room (Room): объект Room с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                    INSERT INTO rooms.rooms 
+                    (activation_time, message_file, settings_file) 
+                    VALUES (%s, %s, %s)
+                    RETURNING room_id
+                """, (room.activation_time, room.message_file, room.settings_file))
+            room.room_id = cursor.fetchone()[0]
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def delete_room(room: Room) -> None:
+        """
+        Удаляет комнату из базы данных
+
+        Args:
+            room (Room): объект Room с установленным room_id для удаления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM rooms.rooms WHERE room_id = %s", (room.room_id, ))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_room_info(room_id: int) -> RoomInfo | None:
+        """
+        Возвращает объект информации о комнате по его идентификатору
+
+        Args:
+            room_id (int): ID комнаты, информацию о которой нужно получить
+
+        Returns:
+            RoomInfo: искомая информация о комнате, если найдена запись
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM rooms.rooms_info WHERE room_id = %s", (room_id, ))
+            result = cursor.fetchone()
+
+            if result:
+                return RoomInfo(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def get_all_rooms_info() -> list[RoomInfo]:
+        """
+        Возвращает список всей информации о комнатах
+
+        Returns:
+            list[RoomInfo]: список объектов RoomInfo
+            list: пустой список, если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM rooms.rooms_info")
+            results = cursor.fetchall()
+            if results:
+                return [RoomInfo(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def update_room_info(room_info: RoomInfo) -> None:
+        """
+        Обновляет информацию о комнате в базе данных
+
+        Args:
+            room_info (RoomInfo): объект RoomInfo с установленным room_id и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                   UPDATE rooms.rooms_info 
+                   SET description=%s, room_name=%s, room_url=%s 
+                   WHERE room_id=%s
+               """, (room_info.description, room_info.room_name, room_info.room_url, room_info.room_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def add_room_info(room_info: RoomInfo) -> None:
+        """
+        Добавляет новую информацию о комнате в базу данных
+
+        Args:
+            room_info (RoomInfo): объект RoomInfo с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                    INSERT INTO rooms.rooms_info 
+                    (description, room_name, room_url) 
+                    VALUES (%s, %s, %s)
+                    RETURNING room_id
+                """, (room_info.description, room_info.room_name, room_info.room_url))
+            room_info.room_id = cursor.fetchone()[0]
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+
+    @staticmethod
+    def delete_room_info(room_id: int) -> None:
+        """
+        Удаляет информацию о комнате из базы данных
+
+        Args:
+            room_id (int): ID комнаты, объект которой нужно удалить
+
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM rooms.rooms_info WHERE room_id = %s", (room_id, ))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    #####ПОСМОТРЕТЬ SQL ЗАПРОС ЕСЛИ ПЕРЕДАВАТЬ ЮЗЕРА А НЕ ЮЗЕРРОЛ
+    @staticmethod
+    def get_user_role(user_role: UserRole) -> UserRole | None:
+        """
+        Возвращает объект роли пользователя по идентификаторам комнаты и пользователя
+
+        Args:
+            user_role (UserRole): объект UserRole с установленными room_id и user_id
+
+        Returns:
+            UserRole: искомая роль пользователя, если найдена запись
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM rooms.user_roles WHERE room_id = %s AND user_id = %s",
+                           (user_role.room_id, user_role.user_id))
+            result = cursor.fetchone()
+
+            if result:
+                return UserRole(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def get_all_user_roles() -> list[UserRole]:
+        """
+        Возвращает список всех ролей пользователей
+
+        Returns:
+            list[UserRole]: список объектов UserRole
+            list: пустой список, если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM rooms.user_roles")
+            results = cursor.fetchall()
+            return [UserRole(*row) for row in results]
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def update_user_role(user_role: UserRole) -> None:
+        """
+        Обновляет роль пользователя в базе данных
+
+        Args:
+            user_role (UserRole): объект UserRole с установленными room_id, user_id и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE rooms.user_roles 
+                SET user_role=%s, join_time=%s, leave_time=%s 
+                WHERE room_id=%s AND user_id=%s
+            """, (user_role.user_role, user_role.join_time, user_role.leave_time,
+                  user_role.room_id, user_role.user_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def add_user_role(user_role: UserRole) -> None:
+        """
+        Добавляет новую роль пользователя в базу данных
+
+        Args:
+            user_role (UserRole): объект UserRole с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO rooms.user_roles 
+                (room_id, user_id, user_role, join_time, leave_time) 
+                VALUES (%s, %s, %s, %s, %s)
+            """, (user_role.room_id, user_role.user_id, user_role.user_role,
+                  user_role.join_time, user_role.leave_time))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod ###тоже посмотреть с джоином
+    def delete_user_role(user_role: UserRole) -> None:
+        """
+        Удаляет роль пользователя из базы данных
+
+        Args:
+            user_role (UserRole): объект UserRole с установленными room_id и user_id для удаления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM rooms.user_roles WHERE room_id = %s AND user_id = %s",
+                          (user_role.room_id, user_role.user_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+#######ПРО ПАРОЛЬ ПОСМОТРЕТЬ
+
+    @staticmethod
+    def get_auth(user_id: int) -> Auth | None:
+        """
+        Возвращает объект аутентификации по идентификатору пользователя
+
+        Args:
+            user_id (int): ID пользователя, объект Auth которого нужно получить
+
+
+        Returns:
+            Auth: искомая запись аутентификации, если найдена
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM technical.auth WHERE user_id = %s", (user_id,))
+            result = cursor.fetchone()
+
+            if result:
+                return Auth(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_all_auth() -> list[Auth]:
+        """
+        Возвращает список всех записей аутентификации
+
+        Returns:
+            list[Auth]: список объектов Auth
+            list: пустой список, если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM technical.auth")
+            results = cursor.fetchall()
+            if results:
+                return [Auth(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def update_auth(auth: Auth) -> None:
+        """
+        Обновляет данные аутентификации в базе данных
+
+        Args:
+            auth (Auth): объект Auth с установленным user_id и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE technical.auth 
+                SET login=%s, hash=%s 
+                WHERE user_id=%s
+            """, (auth.login, auth.hash, auth.user_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod ## not change yet ТУТ ПАРОЛЬ
+    def add_auth(auth: Auth) -> None:
+        """
+        Добавляет новую запись аутентификации в базу данных
+
+        Args:
+            auth (Auth): объект Auth с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO technical.auth 
+                (login, hash) 
+                VALUES ( %s, %s)
+            """, (auth.login, auth.hash))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def delete_auth(auth: Auth) -> None:
+        """
+        Удаляет запись аутентификации из базы данных
+
+        Args:
+            auth (Auth): объект Auth с установленным user_id для удаления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM technical.auth WHERE user_id = %s", (auth.user_id,))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_token(token: Tokens) -> Tokens | None:
+        """
+        Возвращает объект токена по его значению
+
+        Args:
+            token (Tokens): объект Tokens с установленным token
+
+        Returns:
+            Tokens: искомый токен, если найдена запись
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM technical.tokens WHERE token = %s", (token.token,))
+            result = cursor.fetchone()
+
+            if result:
+                return Tokens(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def get_all_tokens() -> list[Tokens]:
+        """
+        Возвращает список всех токенов
+
+        Returns:
+            list[Tokens]: список объектов Tokens
+            list: пустой список, если токен не найден
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM technical.tokens")
+            results = cursor.fetchall()
+            if results:
+                return [Tokens(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def is_token_expired(token: str) -> tuple[bool, dict]:
+        """
+        Проверяет, просрочен ли токен на основе данных из базы данных
+
+        Args:
+            token (str): Токен для проверки
+
+        Returns:
+            bool: True если токен просрочен или не найден, False если токен валиден
+            dict: Дополнительная информация о статусе токена
+        """
+
+        error_info = {
+            'is_expired': True,
+            'error_type': None,
+            'message': '',
+            'expiration_time': None,
+            'token_found': False
+        }
+
+        try:
+            token_obj = Tokens(token=token)
+
+            found_token = DataBase.get_token(token_obj)
+
+            if not found_token:
+                error_info.update({
+                    'error_type': 'TOKEN_NOT_FOUND',
+                    'message': 'Токен не найден в базе данных'
+                })
+                return True, error_info
+
+            error_info['token_found'] = True
+            error_info['expiration_time'] = found_token.expiration_time
+
+            if found_token.expiration_time is None:
+                error_info.update({
+                    'error_type': 'NO_EXPIRATION_TIME',
+                    'message': 'Токен не имеет установленного времени expiration'
+                })
+                return True, error_info
+            current_time = datetime.now()
+
+            if current_time > found_token.expiration_time:
+                error_info.update({
+                    'error_type': 'TOKEN_EXPIRED',
+                    'message': f'Токен просрочен. Время истечения: {found_token.expiration_time}'
+                })
+                return True, error_info
+            else:
+                error_info.update({
+                    'is_expired': False,
+                    'error_type': None,
+                    'message': 'Токен валиден',
+                    'time_remaining': found_token.expiration_time - current_time
+                })
+                return False, error_info
+
+        except Exception as ex:
+            raise DataBaseException(ex)
+
+
+    @staticmethod
+    def delete_token(token: Tokens) -> None:
+        """
+        Удаляет токен из базы данных
+
+        Args:
+            token (Tokens): объект Tokens с установленным token для удаления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM technical.tokens WHERE token = %s", (token.token,))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def update_token(token: Tokens) -> None:
+        """
+        Обновляет данные токена в базе данных
+
+        Args:
+            token (Tokens): объект Tokens с установленным token и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE technical.tokens 
+                SET expiration_time=%s 
+                WHERE token=%s
+            """, (token.expiration_time, token.token))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+                
+    @staticmethod
+    def add_token(token: Tokens) -> None:
+        """
+        Добавляет новый токен в базу данных
+
+        Args:
+            token (Tokens): объект Tokens с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO technical.tokens 
+                (token, expiration_time) 
+                VALUES (%s, %s)
+            """, (token.token, token.expiration_time))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_file(file: File) -> File | None:
+        """
+        Возвращает объект файла по его идентификатору
+
+        Args:
+            file (File): объект File с установленным file_id
+
+        Returns:
+            File: искомый файл, если найдена запись
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM technical.files WHERE file_id = %s", (file.file_id,))
+            result = cursor.fetchone()
+
+            if result:
+                return File(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def get_all_files() -> list[File]:
+        """
+        Возвращает список всех файлов
+
+        Returns:
+            list[File]: список объектов File
+            list: пустой список, если файл не найден
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM technical.files")
+            results = cursor.fetchall()
+            if results:
+                return [File(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise  DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def update_file(file: File) -> None:
+        """
+        Обновляет данные файла в базе данных
+
+        Args:
+            file (File): объект File с установленным file_id и новыми данными
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                    UPDATE technical.files 
+                    SET file_path=%s 
+                    WHERE file_id=%s
+                """, (file.file_path, file.file_id))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+    @staticmethod
+    def add_file(file: File) -> None:
+        """
+        Добавляет новый файл в базу данных
+
+        Args:
+            file (File): объект File с данными для добавления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                    INSERT INTO technical.files 
+                    (file_path) 
+                    VALUES (%s)
+                    RETURNING file_id
+                """, (file.file_path,))
+            file.file_id = cursor.fetchone()[0]
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def delete_file(file: File) -> None:
+        """
+        Удаляет файл из базы данных
+
+        Args:
+            file (File): объект File с установленным file_id для удаления
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM technical.files WHERE file_id = %s", (file.file_id,))
+            conn.commit()
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
