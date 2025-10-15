@@ -9,7 +9,7 @@ app = Flask(__name__, template_folder=os.path.dirname(os.path.abspath(__file__))
             static_folder=os.path.dirname(os.path.abspath(__file__)) + '/../insightroom-frontend/static')
 
 # Конфигурация
-app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
+app.config['JWT_SECRET_KEY'] = 'QpKwDx2bnFSNaSpm0J72Dfw0'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 900
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = 604800
 

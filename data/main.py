@@ -14,6 +14,10 @@ class User:
         self.settings_file = settings_file
         self.verified = verified
 
+    def __str__(self) -> str:
+        """Строковое представление класса"""
+        return f"User(user_id={self.user_id}, username={self.username}, avatar_url={self.avatar_url}, email={self.email}, phone={self.phone})"
+    
 class Notification:
     def __init__(self, notification_id=None, notification_time=None, description=None, room_url=None):
         self.notification_id = notification_id
@@ -55,6 +59,10 @@ class Auth:
         self.login = login
         self.hash = hash
 
+    def __str__(self) -> str:
+        """Строковое представление класса"""
+        return f'Auth(user_id={self.user_id}, login={self.login}, hash={self.hash})'
+
 class File:
     def __init__(self, file_id=None, file_path=None):
         self.file_id = file_id
@@ -69,6 +77,7 @@ class DataBaseException(Exception):
     pass
 
 class DataBase:
+    '''По сути статический класс для работы с БД'''
     dbname = None
     host = None
     user = None
@@ -76,11 +85,15 @@ class DataBase:
     port = None
 
     def __init__(self, dbname = "my_test", host = "localhost", user = "aliska", password = "boss", port = "5432"):
-        self.dbname = dbname
-        self.host = host
-        self.user = user
-        self.password = password
-        self.port = port
+        self.setup_db_connection(dbname, host, user, password, port)
+
+    @classmethod
+    def setup_db_connection(cls, dbname = "my_test", host = "localhost", user = "aliska", password = "boss", port = "5432"):
+        cls.dbname = dbname
+        cls.host = host
+        cls.user = user
+        cls.password = password
+        cls.port = port
 
     @classmethod
     def get_connection(cls):
@@ -101,12 +114,12 @@ class DataBase:
     @staticmethod
     def get_user(user_id: int) -> User | None:
         """
-        Возвращает объект пользователя по его идентифигатору
+        Возвращает объект пользователя по его идентификатору
         Args:
             user (User): объект класса User с установленным user_id
         Returns:
             User: искомый пользователь, если найдена такая запись
-            None:если запись о пользователе не найдена
+            None: если запись о пользователе не найдена
         """
         conn = None
         cursor = None
@@ -135,8 +148,7 @@ class DataBase:
         Возвращает список всех пользователей
 
         Returns:
-            list[User]: список объектов User
-            list: пустой список, если запись не найдена
+            list[User]: список объектов User, пустой, если запись не найдена
         """
         conn = None
         cursor = None
@@ -223,12 +235,10 @@ class DataBase:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO users.users 
-                (username, avatar_url, email, phone, last_online, settings_file, verified) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING user_id
-            """, (user.username, user.avatar_url, user.email, user.phone,
+                (user_id, username, avatar_url, email, phone, last_online, settings_file, verified) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (user.user_id, user.username, user.avatar_url, user.email, user.phone,
                   user.last_online, user.settings_file, user.verified))
-            user.user_id = cursor.fetchone()[0]
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)
@@ -237,8 +247,6 @@ class DataBase:
                 cursor.close()
             if conn:
                 conn.close()
-
-
 
     @staticmethod
     def get_notification(notification_id: int) -> Notification | None:
@@ -272,7 +280,6 @@ class DataBase:
                 cursor.close()
             if conn:
                 conn.close()
-
 
     @staticmethod
     def get_all_notifications() -> list[Notification]:
@@ -1042,12 +1049,14 @@ class DataBase:
                 conn.close()
 
     @staticmethod ## not change yet ТУТ ПАРОЛЬ
-    def add_auth(auth: Auth) -> None:
+    def add_auth(auth: Auth) -> int | None:
         """
         Добавляет новую запись аутентификации в базу данных
 
         Args:
             auth (Auth): объект Auth с данными для добавления
+        Returns:
+            (int | None): возвращает ID созданного пользователя или None, в случае ошибки
         """
         conn = None
         cursor = None
@@ -1056,10 +1065,13 @@ class DataBase:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO technical.auth 
-                (login, hash) 
+                (login, password) 
                 VALUES ( %s, %s)
+                RETURNING user_id
             """, (auth.login, auth.hash))
+            user_id = cursor.fetchone()[0] # fetchone МНОЖЕСТВО ИЗ ОДНОГО ЭЛЕМНТА ВОЗВРАЩАЕТ БЛИН
             conn.commit()
+            return user_id
         except Exception as ex:
             raise DataBaseException(ex)
         finally:
@@ -1067,7 +1079,6 @@ class DataBase:
                 cursor.close()
             if conn:
                 conn.close()
-
 
     @staticmethod
     def delete_auth(auth: Auth) -> None:
@@ -1123,7 +1134,6 @@ class DataBase:
                 cursor.close()
             if conn:
                 conn.close()
-
 
     @staticmethod
     def get_all_tokens() -> list[Tokens]:
@@ -1214,7 +1224,6 @@ class DataBase:
 
         except Exception as ex:
             raise DataBaseException(ex)
-
 
     @staticmethod
     def delete_token(token: Tokens) -> None:
@@ -1325,7 +1334,6 @@ class DataBase:
             if conn:
                 conn.close()
 
-
     @staticmethod
     def get_all_files() -> list[File]:
         """
@@ -1381,7 +1389,6 @@ class DataBase:
             if conn:
                 conn.close()
 
-
     @staticmethod
     def add_file(file: File) -> None:
         """
@@ -1433,3 +1440,12 @@ class DataBase:
                 cursor.close()
             if conn:
                 conn.close()
+
+
+if __name__ == '__main__':
+    DataBase.setup_db_connection(dbname='my_pi_db', host='10.147.19.249', user='db_api_user', password='QpKwDx2bnFSNaSpm0J72Dfw0')
+    '''id = DataBase.add_auth(Auth(login='test_login', hash='123'))
+    print(type(id))
+    DataBase.add_user(User(user_id=id, username='test_username', email='test@yandex.ru', phone='+79870742725', settings_file='user_test_login.ini'))'''
+    '''id = DataBase.add_auth(Auth(user_id='None', login='JOJO', hash='7c6e5b6dcd5f3af8a3495cccf2a630964572840e3b2f61706be05dc0c988d8b5'))
+    DataBase.add_user(User(user_id=id, username='JOJO', avatar_url=None, email='JOJO@JOJO.JOJO', phone='+79870742726'))'''

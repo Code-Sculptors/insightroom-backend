@@ -4,7 +4,7 @@ from flask_jwt_extended import (
     jwt_required, get_jwt_identity, get_jwt
 )
 from utils.jwt_utils import add_to_blacklist
-from models.user_manager import user_manager
+from models import user_manager
 import time
 import os
 
@@ -17,7 +17,7 @@ def register() -> Response:
         data = request.json
         
         # Проверяем обязательные поля
-        required_fields = ['username', 'email', 'password']
+        required_fields = ['username', 'email', 'password', 'login', 'tel']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Поле {field} обязательно'}), 400
@@ -25,10 +25,13 @@ def register() -> Response:
         username = data['username']
         email = data['email']
         password = data['password']
-        
+        login = data['login']
+        phone_number = data['tel']
+        print(username, email, password, login, phone_number)
         # Регистрируем пользователя
-        success, message = user_manager.register_user(username, email, password)
-        
+        ans = user_manager.user_manager.register_user(username, email, password, login, phone_number)
+        print(ans)
+        success, message = ans
         if success:
             return jsonify({
                 'message': message,
@@ -41,6 +44,7 @@ def register() -> Response:
             return jsonify({'error': message}), 400
             
     except Exception as e:
+        print(f'ERROR: `{e}` in /register')
         return jsonify({'error': f'Ошибка сервера: {str(e)}'}), 500
 
 @auth_bp.route('/login', methods=['POST'])
@@ -54,24 +58,22 @@ def login() -> Response:
             return jsonify({'error': 'Логин и пароль обязательны'}), 400
         
         # Аутентифицируем пользователя
-        success, result = user_manager.authenticate_user(username, password)
+        
+        success, result = user_manager.user_manager.authenticate_user(username, password)
         
         if success:
             user_data = result
             access_token = create_access_token(
-                identity=username,
-                additional_claims={'role': user_data['role']}
+                identity=user_data.user_id,
+                additional_claims={
+                    'verified': user_data.verified
+                }
             )
-            refresh_token = create_refresh_token(identity=username)
-            print("LOG IN", access_token, refresh_token, sep='\n')
+            refresh_token = create_refresh_token(identity=user_data.user_id)
+            print(f"LOG IN: {login}", access_token, refresh_token, sep='\n')
             return jsonify({
                 'access_token': access_token,
                 'refresh_token': refresh_token,
-                'user': {
-                    'username': username,
-                    'email': user_data['email'],
-                    'role': user_data['role']
-                },
                 'access_expires_in': 900,
                 'refresh_expires_in': 604800
             }), 200
@@ -88,7 +90,7 @@ def refresh() -> Response:
     current_user = get_jwt_identity()
     new_access_token = create_access_token(
         identity=current_user,
-        additional_claims={'role': user_manager.get_user(current_user)['role']}
+        additional_claims={'verified': user_manager.user_manager.get_user(current_user).verified}
     )
     
     return jsonify({
@@ -118,21 +120,3 @@ def logout() -> Response:
     add_to_blacklist(access_token)
     add_to_blacklist(refresh_token)
     return jsonify({'message': 'Успешный выход'})
-
-@auth_bp.route('/admin/users', methods=['GET'])
-@jwt_required()
-def get_all_users() -> Response:
-    """Получение списка всех пользователей (только для админа)"""
-    try:
-        # Проверяем права администратора
-        current_user = get_jwt_identity()
-        user_data = user_manager.get_user(current_user)
-        
-        if not user_data or user_data.get('role') != 'admin':
-            return jsonify({'error': 'Требуются права администратора'}), 403
-        
-        users = user_manager.get_all_users()
-        return jsonify({'users': users}), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500

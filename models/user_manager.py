@@ -1,55 +1,17 @@
 import re
-import os
 import hashlib
-import secrets
-import json
+if __name__ == '__main__':
+    from ..data.main import *
+    from ..utils import ini_utils
+else:
+    from data.main import *
+    from utils import ini_utils
+
 
 class UserManager:
     '''Класс для работы с пользователями через БД'''
     def __init__(self):
-        default_users = {
-            'user1': {
-                'password': self.hash_password('password1'),
-                'email': 'user1@example.com',
-                'role': 'user',
-                'created_at': '2024-01-01'
-            },
-            'admin': {
-                'password': self.hash_password('admin123'),
-                'email': 'admin@example.com',
-                'role': 'admin',
-                'created_at': '2024-01-01'
-            }
-        }
-        try:
-            db = open(os.path.dirname(os.path.abspath(__file__)) + '/../data/db.json', mode='r', encoding='utf-8')
-            if db.read().strip() == '':
-                self.users = default_users
-            else:
-                db.seek(0)
-                self.users : dict = json.load(db)
-            db.close()
-        except json.decoder.JSONDecodeError:
-            self.users = dict()
-        except FileNotFoundError:
-            with open(os.path.dirname(os.path.abspath(__file__)) + '/../data/db.json', mode='w') as _:
-                self.users = dict()
-        if not self.users.get('user1', False):
-            self.users['user1'] = {
-                'password': self.hash_password('password1'),
-                'email': 'user1@example.com',
-                'role': 'user',
-                'created_at': '2024-01-01'
-            }
-        
-        if not self.users.get('admin', False):
-            self.users['admin'] = {
-                'password': self.hash_password('admin123'),
-                'email': 'admin@example.com',
-                'role': 'admin',
-                'created_at': '2024-01-01'
-            }
-            
+        pass
     
     def hash_password(self, password: str) -> str:
         """Хеширование пароля"""
@@ -63,15 +25,8 @@ class UserManager:
     
     def validate_username(self, username: str) -> tuple[bool, str]:
         """Валидация имени пользователя"""
-        if len(username) < 3 or len(username) > 20:
-            return False, "Имя пользователя должно быть от 3 до 20 символов"
-        
-        if not re.match(r'^[a-zA-Z0-9_]+$', username):
-            return False, "Имя пользователя может содержать только буквы, цифры и подчеркивания"
-        
-        if username in self.users:
-            return False, "Имя пользователя уже занято"
-        
+        if len(username) < 3 or len(username) > 30:
+            return False, "Имя пользователя должно быть от 3 до 30 символов"
         return True, "OK"
     
     def validate_password(self, password: str) -> tuple[bool, str]:
@@ -89,14 +44,32 @@ class UserManager:
             return False, "Некорректный формат email"
         
         # Проверка уникальности email
-        for user_data in self.users.values():
-            if user_data.get('email') == email:
+        for user in DataBase.get_all_users():
+            if user.email == email:
                 return False, "Email уже используется"
         
         return True, "OK"
     
-    def register_user(self, username: str, email: str, password: str, role: str='user') -> tuple[bool, str]:
-        """Регистрация нового пользователя"""
+    def validate_login(self, login: str) -> tuple[bool, str]:
+        """Валидация логина"""
+        login_regex = r'^[a-zA-Z0-9._%+-]'
+        if not re.match(login_regex, login):
+            return False, "Логин исользует запрещенные символы"
+        
+        for auth in DataBase.get_all_auth():
+            if auth.login == login:
+                return False, "Логин уже используется"
+        return True, "OK"
+    
+    def register_user(self, username: str, email: str, password: str, login: str, phone: str) -> tuple[bool, str]:
+        """Регистрация нового пользователя
+        Args:
+            username (str): имя пользователя
+            email (str): почта пользователя
+            password (str): пароль пользователя
+            login (str): логин пользователя
+        Returns:
+            (bool, str): успешна ли регистрация, дополнительная информация"""
         # Валидация данных
         valid, message = self.validate_username(username)
         if not valid:
@@ -110,45 +83,61 @@ class UserManager:
         if not valid:
             return False, message
         
+        valid, message = self.validate_login(login)
+        if not valid:
+            return False, message
+        
         # Добавление пользователя
-        self.users[username] = {
-            'password': self.hash_password(password),
-            'email': email,
-            'role': role,
-            'created_at': '2024-01-01'  # В реальном приложении используйте datetime
-        }
+        try:
+            new_auth = Auth(login=login, hash=self.hash_password(password))
+            new_user = User(username=username, 
+                            email=email,  
+                            settings_file=f'user_{login}.ini', 
+                            phone=phone)
+            print(new_auth, new_user, sep='\n')
+            user_id = DataBase.add_auth(new_auth)
+            new_user.user_id = user_id
+            print(new_user)
+            DataBase.add_user(new_user)
+            ini_utils.create_user_setting_file(f'user_{login}')
+            return True, "Пользователь успешно зарегистрирован"
+        except DataBaseException as ex:
+            print(f'DataBaseException: `{ex}` in user_manager.register_user()')
+            return False, "Ошибка при работе с БД"
+        except Exception as ex:
+            print(f'ERROR: `{ex}` in user_manager.register_user()')
+            return False, "Непредвиденная ошибка"
+    
+    def authenticate_user(self, login: str, password: str) -> tuple[bool, User | str]:
+        """Аутентификация пользователя
+        Args:
+            login (str): логин пользователя
+            password (str): пароль пользователя
+        Returns:
+            (bool, User | str): успешна ли регистраци, в случае успеха - объект User, иначе информация об ошибке"""
+        for auth in DataBase.get_all_auth():
+            if auth.login == login:
+                if not self.verify_password(password, auth.hash):
+                    return False, "Неверный пароль"
+                else:
+                    try:
+                        user = DataBase.get_user(auth.user_id)
+                        return True, user
+                    except DataBaseException as ex:
+                        return False, "Ошибка при поиске пользователе в БД"
+                    except Exception as ex:
+                        print(f'ERROR: {ex} in user_manager.authenticate_user()')
+                        return False, "Непредвиденная ошибка"
+        return False, "Пользователь не найден"
+    
+    def get_user(user_id: int) -> User | None:
+        '''Оболочка для DataBase.get_user'''
+        try:
+            return DataBase.get_user(user_id)
+        except DataBaseException as ex:
+            return None
         
-        self.database_update()
 
-        return True, "Пользователь успешно зарегистрирован"
-    
-    def authenticate_user(self, username: str, password: str) -> tuple[bool, str]:
-        """Аутентификация пользователя"""
-        if username not in self.users:
-            return False, "Пользователь не найден"
-        
-        if not self.verify_password(password, self.users[username]['password']):
-            return False, "Неверный пароль"
-        
-        return True, self.users[username]
-    
-    def get_user(self, username: str) -> dict:
-        """Получение информации о пользователе"""
-        return self.users.get(username)
-    
-    def get_all_users(self) -> dict:
-        """Получение списка всех пользователей (для админа)"""
-        return {
-            username: {k: v for k, v in data.items() if k != 'password'}
-            for username, data in self.users.items()
-        }
-    
-    def database_update(self) -> None:
-        """Отправка данных в бд"""
-        with open('./data/db.json', mode='w', encoding='utf-8') as db:
-            json.dump(self.users, db)
-        print('База данных обновлена')
-        
+DataBase.setup_db_connection(dbname='my_pi_db', host='10.147.19.249', user='db_api_user', password='QpKwDx2bnFSNaSpm0J72Dfw0')
 
-# Глобальный экземпляр менеджера пользователей
 user_manager = UserManager()
