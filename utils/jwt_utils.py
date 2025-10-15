@@ -8,11 +8,13 @@ import datetime
 jwt_manager = JWTManager()
 # Черный список токенов (в production используйте Redis или БД)
 def load_blacklist() -> set:
+    '''Загружает черный список токенов в множество'''
     with open(os.path.dirname(os.path.abspath(__file__)) + '/../data/blacklist.txt', mode='r', encoding='utf-8') as file:
         blacklisted_tokens = set(map(str.rstrip, file.readlines()))
     return blacklisted_tokens
 
 def add_to_blacklist(token: str) -> None:
+    '''Добавляет токен в черны список'''
     global blacklisted_tokens
     if token and token != 'None':
         with open(os.path.dirname(os.path.abspath(__file__)) + '/../data/blacklist.txt', mode='a', encoding='utf-8') as blacklist:
@@ -23,13 +25,13 @@ def add_to_blacklist(token: str) -> None:
 blacklisted_tokens = load_blacklist()
 
 @jwt_manager.token_in_blocklist_loader
-def check_if_token_revoked(jwt_header, jwt_payload):
+def check_if_token_revoked(jwt_header, jwt_payload) -> bool:
     """Проверка, находится ли токен в черном списке"""
     jti = jwt_payload["jti"]
     return jti in blacklisted_tokens
 
 @jwt_manager.expired_token_loader
-def expired_token_callback(jwt_header, jwt_payload):
+def expired_token_callback(jwt_header, jwt_payload) -> tuple[dict, int]:
     """Обработчик истечения access token"""
     return {
         'error': 'access_token_expired',
@@ -37,7 +39,7 @@ def expired_token_callback(jwt_header, jwt_payload):
     }, 401
 
 @jwt_manager.invalid_token_loader
-def invalid_token_callback(error):
+def invalid_token_callback(error) -> tuple[dict, int]:
     """Обработчик невалидного токена"""
     return {
         'error': 'invalid_token',
@@ -53,7 +55,7 @@ def missing_token_callback(error):
         'message': 'Требуется аутентификация.'
     }, 401
 
-def is_token_expired(token):
+def is_token_expired(token) -> tuple[bool, dict]:
     """
     Проверяет, просрочен ли JWT токен
     
@@ -89,6 +91,7 @@ def is_token_expired(token):
         return True, {'error': f'Ошибка при проверке токена: {str(e)}'}
     
 def cleanup_expired_tokens() -> int:
+    '''Очищает черный список от просроченных токенов'''
     global blacklisted_tokens
     valid_list = []
     count_invalid_tokens = 0
