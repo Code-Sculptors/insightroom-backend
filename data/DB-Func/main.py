@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2 import connect
 from datetime import datetime
 
 
@@ -103,6 +104,7 @@ class DataBase:
     password = None
     port = None
 
+
     def __init__(self, dbname="my_test", host="localhost", user="aliska", password="boss", port="5432"):
         self.setup_db_connection(dbname, host, user, password, port)
 
@@ -113,6 +115,19 @@ class DataBase:
         cls.user = user
         cls.password = password
         cls.port = port
+
+
+    def __init__(self, dbname = "my_test", host = "localhost", user = "aliska", password = "boss", port = "5432"):
+        if dbname:
+            DataBase.dbname = dbname
+        if host:
+            DataBase.host = host
+        if user:
+            DataBase.user = user
+        if password:
+            DataBase.password = password
+        if port:
+            DataBase.port = port
 
     @classmethod
     def get_connection(cls):
@@ -162,7 +177,7 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def get_all_users() -> list[User]:
+    def get_all_users()-> list[User]:
         """
         Возвращает список всех пользователей
 
@@ -1489,6 +1504,7 @@ class DataBase:
             if conn:
                 conn.close()
 
+
     @staticmethod
     def add_user_and_room(user_id:int, room_id:int)->None:
         '''
@@ -1739,3 +1755,15 @@ if __name__ == '__main__':
 # DataBase.update_contact(sec_contact)
 #
 # DataBase.delete_contact(new_contact)
+
+
+
+
+db = DataBase()
+new_user = User(user_id=6)
+new_user = db.get_user(new_user)
+new_user.username = 'www'
+db.update_user(new_user)
+if new_user:
+    print(vars(new_user))
+
