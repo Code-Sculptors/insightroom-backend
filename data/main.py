@@ -177,6 +177,68 @@ class DataBase:
                 conn.close()
 
     @staticmethod
+    def get_user_by_phone(phone: str) -> User | None:
+        """
+        Возвращает объект пользователя по его идентификатору
+        Args:
+            phone (str): телефон пользователя, объект которого хотим получить
+        Returns:
+            User: искомый пользователь, если найдена такая запись
+            None: если запись о пользователе не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM users.users WHERE phone = %s", (phone,))
+            result = cursor.fetchone()
+
+            if result:
+                return User(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_user(email: str) -> User | None:
+        """
+        Возвращает объект пользователя по его идентификатору
+        Args:
+            email (str): почта пользователя, объект которого хотим получить
+        Returns:
+            User: искомый пользователь, если найдена такая запись
+            None: если запись о пользователе не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM users.users WHERE email = %s", (email,))
+            result = cursor.fetchone()
+
+            if result:
+                return User(*result)
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
     def get_all_users()-> list[User]:
         """
         Возвращает список всех пользователей
@@ -1759,11 +1821,11 @@ if __name__ == '__main__':
 
 
 
-    db = DataBase()
-    new_user = User(user_id=6)
-    new_user = db.get_user(new_user)
-    new_user.username = 'www'
-    db.update_user(new_user)
-    if new_user:
-        print(vars(new_user))
+    # db = DataBase()
+    # new_user = User(user_id=6)
+    # new_user = db.get_user(new_user)
+    # new_user.username = 'www'
+    # db.update_user(new_user)
+    # if new_user:
+    #     print(vars(new_user))
 
