@@ -51,15 +51,21 @@ def register() -> Response:
 def login() -> Response:
     """Аутентификация пользователя"""
     try:
-        username = request.json.get('username')
-        password = request.json.get('password')
+        login = request.json.get('username', None)
+        email = request.json.get('email', None)
+        phone = request.json.get('phone', None)
+        password = request.json.get('password', None)
         
-        if not username or not password:
+        if not (login or email or phone) or not password:
             return jsonify({'error': 'Логин и пароль обязательны'}), 400
         
-        # Аутентифицируем пользователя
-        
-        success, result = user_manager.user_manager.authenticate_user(username, password)
+        # TODO: Аутентифицируем пользователя
+        if login:
+            success, result = user_manager.user_manager.authenticate_user(login, password)
+        elif email:
+            ...
+        elif phone:
+            ...
         
         if success:
             user_data = result

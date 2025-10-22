@@ -2,8 +2,10 @@ from configparser import ConfigParser
 import os
 
 config = ConfigParser()
-if not os.path.isdir('./data/user_settings'):
-    os.mkdir('./data/user_settings')
+folder = os.path.join(os.path.split(os.path.split(__file__)[0])[0], 'data/user_settings')
+
+if not os.path.isdir(folder):
+    os.mkdir(folder)
 
 def create_user_setting_file(title: str) -> None:
     '''Создает файл настроек пользователя с заданным названием в папке data/user_settings
@@ -16,6 +18,6 @@ def create_user_setting_file(title: str) -> None:
     #TODO: Собрать файл с настройками пользователей
     ...
 
-    with open(f'./data/user_settings/{title}.ini', mode='w', encoding='utf-8') as file:
+    with open(f'{folder}/{title}.ini', mode='w', encoding='utf-8') as file:
         config.write(file)
 
