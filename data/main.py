@@ -2,6 +2,8 @@ import psycopg2
 from psycopg2 import connect
 from datetime import datetime
 
+from auth.routes import login
+
 
 class User:
     def __init__(self, user_id=None, username=None, avatar_url=None, email=None,
@@ -179,7 +181,7 @@ class DataBase:
     @staticmethod
     def get_user_by_phone(phone: str) -> User | None:
         """
-        Возвращает объект пользователя по его идентификатору
+        Возвращает объект пользователя по его номеру телефона
         Args:
             phone (str): телефон пользователя, объект которого хотим получить
         Returns:
@@ -208,9 +210,9 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def get_user(email: str) -> User | None:
+    def get_user_by_email(email: str) -> User | None:
         """
-        Возвращает объект пользователя по его идентификатору
+        Возвращает объект пользователя по его почте
         Args:
             email (str): почта пользователя, объект которого хотим получить
         Returns:
@@ -622,10 +624,110 @@ class DataBase:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO users.contacts 
-                (user_id, contact_name) 
+                (user_id, contact_name, contact_id) 
                 VALUES (%s, %s)
                 RETURNING contact_id
-            """, (contact.user_id, contact.contact_name))
+            """, (contact.user_id, contact.contact_name, contact.contact_id))
+            contact_id = cursor.fetchone()[0]
+            conn.commit()
+            return contact_id
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    @staticmethod
+    def add_contact_by_login(login: str, contact_name:str, user_id:int) -> int|None:
+        """
+        Добавляет новый контакт с установленным именем в базу данных по логину пользователя
+
+        Args:
+            login (str): логин пользователя, которого ходим добавить
+            contact_name(str): имя, которое хотим установить для пользователя
+            user_id(int): ID пользователя, который хочет добавить себе контакт
+        Returns:
+            (int|None): возвращает ID созданного контакта или None, в случае ошибки
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO users.contacts 
+                (user_id, contact_name, contact_id) 
+                VALUES (%s, %s, (SELECT u.user_id 
+                                FROM users.users u
+                                JOIN technical.auth a ON u.user_id = a.user_id
+                                WHERE a.login = %s))
+                RETURNING contact_id
+            """, (user_id, contact_name, login))
+            contact_id = cursor.fetchone()[0]
+            conn.commit()
+            return contact_id
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    @staticmethod
+    def add_contact_by_email(email:str, contact_name:str, user_id:int) -> int|None:
+        """
+        Добавляет новый контакт в базу данных по почте
+
+        Args:
+           email (str): почта пользователя, которого ходим добавить
+            contact_name(str): имя, которое хотим установить для пользователя
+            user_id(int): ID пользователя, который хочет добавить себе контакт
+        Returns:
+            (int|None): возвращает ID созданного контакта или None, в случае ошибки
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO users.contacts 
+                (user_id, contact_name, contact_id) 
+                VALUES (%s, %s, (SELECT user_id FROM users.users WHERE email = %s))
+                RETURNING contact_id
+            """, (user_id,contact_name, email))
+            contact_id = cursor.fetchone()[0]
+            conn.commit()
+            return contact_id
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    @staticmethod
+    def add_contact_by_phone(phone:str, contact_name:str, user_id:int) -> int|None:
+        """
+        Args:
+            phone (str): телефон пользователя, которого ходим добавить
+            contact_name(str): имя, которое хотим установить для пользователя
+            user_id(int): ID пользователя, который хочет добавить себе контакт
+        Returns:
+            (int|None): возвращает ID созданного контакта или None, в случае ошибки
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO users.contacts 
+                (user_id, contact_name, contact_id) 
+                VALUES (%s, %s, (SELECT user_id FROM users.users WHERE phone = %s))
+                RETURNING contact_id
+            """, (user_id, contact_name, phone))
             contact_id = cursor.fetchone()[0]
             conn.commit()
             return contact_id
@@ -1818,8 +1920,53 @@ if __name__ == '__main__':
     #
     # DataBase.delete_contact(new_contact)
 
+#Для входа по телефону и по почте
 
+# id = DataBase.add_auth(Auth(user_id=None, login='qwerty', hash='pupupu'))
+# id_another = DataBase.add_auth(Auth(user_id=None, login='try', hash='яя'))
+# new_user = User(user_id=id, username='кнопка', email='привет@w.com', phone='8(965)777-9098')
+# DataBase.add_user(new_user)
+# another_user = User(user_id=id_another, username='стрелка', email='крутой@w.com', phone='8(963)576-6743')
+# DataBase.add_user(another_user)
+# user_phone = DataBase.get_user_by_phone(new_user.phone)
+# print(vars(user_phone))
+# user_email = DataBase.get_user_by_email(another_user.email)
+# print(vars(user_email))
 
+#Для добавления по логину, почте и телефону
+# id = DataBase.add_auth(Auth(user_id=None, login='check', hash='123'))
+# id_another = DataBase.add_auth(Auth(user_id=None, login='catch', hash='456'))
+# id_third = DataBase.add_auth(Auth(user_id=None, login='oop', hash='789'))
+# id_forth = DataBase.add_auth(Auth(user_id=None, login='test', hash='000'))
+#
+# new_user = User(user_id=id, username='первый', email='апр@w.com', phone='8(800)555-35-35')
+# DataBase.add_user(new_user)
+# another_user = User(user_id=id_another, username='второй', email='дло@w.com', phone='8(800)555')
+# DataBase.add_user(another_user)
+# third_user = User(user_id=id_third, username='третий', email='ыва.com', phone='808080')
+# DataBase.add_user(third_user)
+# forth_user = User(user_id=id_forth, username='четвертый', email='+сьб.com', phone='89160564578')
+# DataBase.add_user(forth_user)
+#
+# second_id = DataBase.add_contact_by_login('catch', 'конфетка', new_user.user_id)
+# print(second_id)
+# third_id = DataBase.add_contact_by_email(third_user.email, 'шоколадка',new_user.user_id)
+# print(third_id)
+# forth_id = DataBase.add_contact_by_phone(forth_user.phone, 'леденец', new_user.user_id)
+# print(forth_id)
+
+# id_want1 = DataBase.serch_contact_id(another_user.email)
+# new_contact = Contact(user_id=id_want1, contact_name='я хороший', contact_id=None)
+# id_newc = DataBase.add_contact(new_contact)
+# new_contact.contact_id=id_newc
+# id_want2 = DataBase.serch_contact_id(third_user.email)
+# sec_contact = Contact(user_id=id_want2, contact_name='я злой', contact_id=None)
+# id_trc = DataBase.add_contact(sec_contact)
+# sec_contact.contact_id=id_trc
+# sec_contact.contact_name='ben'
+# DataBase.update_contact(sec_contact)
+#
+# DataBase.delete_contact(new_contact)
 
     # db = DataBase()
     # new_user = User(user_id=6)
