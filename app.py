@@ -4,14 +4,19 @@ from auth.routes import auth_bp
 from views.routes import views_bp
 from utils.jwt_utils import jwt_manager
 from utils.scheduler import start_cleanup_scheduler
+from flask_cors import CORS
+
 
 app = Flask(__name__, template_folder=os.path.dirname(os.path.abspath(__file__)) + '../insightroom-frontend/pages', 
             static_folder=os.path.dirname(os.path.abspath(__file__)) + '/../insightroom-frontend/static')
+CORS(app, supports_credentials=True)
 
 # Конфигурация
 app.config['JWT_SECRET_KEY'] = 'QpKwDx2bnFSNaSpm0J72Dfw0'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 900
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = 604800
+app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_COOKIE_SAMESITE'] = 'Lax'
 
 # Инициализация расширений
 jwt_manager.init_app(app)
@@ -24,4 +29,4 @@ app.register_blueprint(views_bp)
 start_cleanup_scheduler()
 
 if __name__ == '__main__':
-    app.run(debug=True, ssl_context='adhoc')
+    app.run(host='0.0.0.0', debug=True, ssl_context='adhoc')

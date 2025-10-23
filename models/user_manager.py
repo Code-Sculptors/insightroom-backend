@@ -61,7 +61,7 @@ class UserManager:
                 return False, "Логин уже используется"
         return True, "OK"
     
-    def register_user(self, username: str, email: str, password: str, login: str, phone: str) -> tuple[bool, str]:
+    def register_user(self, username: str, email: str, password: str, login: str, phone: str) -> tuple[bool, (str | User)]:
         """Регистрация нового пользователя
         Args:
             username (str): имя пользователя
@@ -69,7 +69,8 @@ class UserManager:
             password (str): пароль пользователя
             login (str): логин пользователя
         Returns:
-            (bool, str): успешна ли регистрация, дополнительная информация"""
+            (True, User): в случае успеха
+            (False, str): при провале"""
         # Валидация данных
         valid, message = self.validate_username(username)
         if not valid:
@@ -100,7 +101,7 @@ class UserManager:
             print(new_user)
             DataBase.add_user(new_user)
             ini_utils.create_user_setting_file(f'user_{login}')
-            return True, "Пользователь успешно зарегистрирован"
+            return True, new_user
         except DataBaseException as ex:
             print(f'DataBaseException: `{ex}` in user_manager.register_user()')
             return False, "Ошибка при работе с БД"
@@ -134,6 +135,20 @@ class UserManager:
         '''Оболочка для DataBase.get_user'''
         try:
             return DataBase.get_user(user_id)
+        except DataBaseException as ex:
+            return None
+        
+    def get_user_by_phone(user_phone: str) -> User | None:
+        '''Оболочка для DataBase.get_user_by_phone'''
+        try:
+            return DataBase.get_user_by_phone(user_phone)
+        except DataBaseException as ex:
+            return None
+        
+    def get_user_by_email(user_email: str) -> User | None:
+        '''Оболочка для DataBase.get_user_by_email'''
+        try:
+            return DataBase.get_user_by_email(user_email)
         except DataBaseException as ex:
             return None
         

@@ -208,7 +208,7 @@ class DataBase:
                 conn.close()
 
     @staticmethod
-    def get_user(email: str) -> User | None:
+    def get_user_by_email(email: str) -> User | None:
         """
         Возвращает объект пользователя по его идентификатору
         Args:

@@ -11,10 +11,13 @@ def create_user_setting_file(title: str) -> None:
     '''Создает файл настроек пользователя с заданным названием в папке data/user_settings
     Args: 
         title (str): название файла, который нужно создать'''
-    config.add_section("Settings")
-    config.add_section("Visual")
-    config.add_section("Privacy")
-
+    try:
+        config.add_section("Settings")
+        config.add_section("Visual")
+        config.add_section("Privacy")
+    except Exception as ex:
+        print(f'ERROR: {ex} in create_user_setting_file({title})')
+ 
     #TODO: Собрать файл с настройками пользователей
     ...
 
