@@ -131,21 +131,21 @@ class UserManager:
                         return False, "Непредвиденная ошибка"
         return False, "Пользователь не найден"
     
-    def get_user(user_id: int) -> User | None:
+    def get_user(self, user_id: int) -> User | None:
         '''Оболочка для DataBase.get_user'''
         try:
             return DataBase.get_user(user_id)
         except DataBaseException as ex:
             return None
         
-    def get_user_by_phone(user_phone: str) -> User | None:
+    def get_user_by_phone(self, user_phone: str) -> User | None:
         '''Оболочка для DataBase.get_user_by_phone'''
         try:
             return DataBase.get_user_by_phone(user_phone)
         except DataBaseException as ex:
             return None
         
-    def get_user_by_email(user_email: str) -> User | None:
+    def get_user_by_email(self, user_email: str) -> User | None:
         '''Оболочка для DataBase.get_user_by_email'''
         try:
             return DataBase.get_user_by_email(user_email)

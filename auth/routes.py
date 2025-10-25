@@ -5,7 +5,7 @@ from flask_jwt_extended import (
     set_access_cookies, set_refresh_cookies, unset_jwt_cookies
 )
 from utils.jwt_utils import add_to_blacklist
-from models import user_manager
+from models import user_manager, rooms_manager
 import time
 import os
 
@@ -104,6 +104,7 @@ def login() -> Response:
 @jwt_required(refresh=True)
 def refresh() -> Response:
     """Обновление access token"""
+    print('LOG: Start refreshing...')
     current_user = get_jwt_identity()
     new_access_token = create_access_token(
         identity=current_user,
@@ -113,17 +114,15 @@ def refresh() -> Response:
     set_access_cookies(response, new_access_token)
     return response
 
-@auth_bp.route('/protected-data')
-@jwt_required()
-def protected_data() -> Response:
-    """Защищенные данные"""
+@auth_bp.route('/check-auth')
+@jwt_required(optional=True)
+def check_auth():
     current_user = get_jwt_identity()
-    print("!!!!!!!!!!", current_user)
-    return jsonify({
-        'message': 'Это защищенные данные!',
-        'user': current_user,
-        'data': ['Секретная информация 1', 'Секретная информация 2']
-    })
+    if current_user:
+        return jsonify({'authenticated': True, 'user_id': current_user})
+    else:
+        return jsonify({'authenticated': False}), 401
+
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout() -> Response:
@@ -136,3 +135,21 @@ def logout() -> Response:
     response = jsonify({'message': 'Logged out successfully'})
     unset_jwt_cookies(response)
     return response
+
+
+'''!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Блок работы с комнатами!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'''
+@auth_bp.route('/create-room', methods=['POST'])
+@jwt_required(optional=True)
+def create_room() -> Response:
+    """Создание комнаты"""
+    try:
+        user_id = get_jwt_identity()
+        room_name = request.json.get('room_name')
+        description = request.json.get('room_description', None)
+        activation_time = request.json.get('activation_time', None)
+        url = rooms_manager.rooms_manager.create_room(user_id, room_name, description, activation_time)
+        return jsonify({'url': url}), 200
+    except Exception as ex:
+        print(f'ERROR: {ex} in /create_room')
+        return jsonify({'error': ex}), 500
+    

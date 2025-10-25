@@ -2,8 +2,6 @@ import psycopg2
 from psycopg2 import connect
 from datetime import datetime
 
-from auth.routes import login
-
 
 class User:
     def __init__(self, user_id=None, username=None, avatar_url=None, email=None,
@@ -43,6 +41,14 @@ class RoomInfo:
         self.description = description
         self.room_name = room_name
         self.room_url = room_url
+    
+    def to_dict(self) -> dict:
+        return {
+            'room_id': self.room_id,
+            'description': self.description,
+            'room_name': self.room_name,
+            'room_url': self.room_url
+        }
 
 
 class Room:
@@ -837,7 +843,7 @@ class DataBase:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE rooms.rooms 
-                SET activation_time=%s, message_file=%s, settings_file=%s 
+                SET activation_time=TO_TIMESTAMP(%s), message_file=%s, settings_file=%s 
                 WHERE room_id=%s
             """, (room.activation_time, room.message_file, room.settings_file, room.room_id))
             conn.commit()
@@ -867,7 +873,7 @@ class DataBase:
             cursor.execute("""
                     INSERT INTO rooms.rooms 
                     (activation_time, message_file, settings_file) 
-                    VALUES (%s, %s, %s)
+                    VALUES (TO_TIMESTAMP(%s), %s, %s)
                     RETURNING room_id
                 """, (room.activation_time, room.message_file, room.settings_file))
             room_id = cursor.fetchone()[0]
