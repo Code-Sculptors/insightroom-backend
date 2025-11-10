@@ -2120,7 +2120,7 @@ if __name__ == '__main__':
 # DataBase.add_user_role(user_creator)
 # user_null = UserRole(37, 105)
 # DataBase.add_user_role(user_null)
-print(DataBase.get_created_rooms_for_user(105))
+#print(DataBase.get_created_rooms_for_user(105))
 
 
 # DataBase.add_user_and_room(106,37)
