@@ -29,7 +29,7 @@ class Notification:
 
 
 class Contact:
-    def __init__(self, contact_id=None, user_id=None, contact_name=None):
+    def __init__(self, user_id=None, contact_id=None, contact_name=None):
         self.user_id = user_id
         self.contact_id = contact_id
         self.contact_name = contact_name
@@ -1810,6 +1810,130 @@ class DataBase:
             if conn:
                 conn.close()
 
+    @staticmethod
+    def get_contacts_for_user(user_id: int) -> list[Contact]:
+        """
+        Возвращает список контактов для пользователя его идентификатору
+        Args:
+            user_id (int): ID пользователя, контакты которого хотим получить
+        Returns:
+            list[Contact]: Список найденных контактов пользователя, если такие есть, или пустой список если таковые не найдены
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM users.contacts WHERE user_id = %s", (user_id,))
+            results = cursor.fetchall()
+            if results:
+                return [Contact(*row) for row in results]
+            else:
+                return []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_all_rooms_for_user(user_id: int) -> list[dict]:
+        """
+         Возвращает информацию о комнатах пользователя в формате JSON
+
+            Args:
+                user_id (int): ID пользователя
+
+            Returns:
+                list[dict]: список комнат в формате JSON или пустой список если комнаты не найдены
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("""SELECT json_agg(room_data) as rooms_json
+                                FROM (
+                                    SELECT 
+                                        json_build_object(
+                                            'room_id', r.room_id,
+                                            'activation_time', r.activation_time,
+                                            'message_file', r.message_file,
+                                            'settings_file', r.settings_file,
+                                            'room_info', json_build_object(
+                                                'room_name', ri.room_name,
+                                                'description', ri.description,
+                                                'room_url', ri.room_url
+                                            )
+                                        ) as room_data
+                                    FROM rooms.rooms r
+                                    JOIN rooms.rooms_info ri ON r.room_id = ri.room_id
+                                    JOIN rooms.user_and_room uar ON r.room_id = uar.room_id
+                                    WHERE uar.user_id = %s) 
+                                as rooms_data;""", (user_id,))
+            result = cursor.fetchone()
+            return result[0] if result and result[0] else []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_created_rooms_for_user(user_id: int) -> list[dict]:
+        """
+         Возвращает информацию о комнатах, созданных пользователем в формате JSON
+
+            Args:
+                user_id (int): ID пользователя
+
+            Returns:
+                list[dict]: список комнат в формате JSON или пустой список если комнаты не найдены
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("""SELECT json_agg(room_data) as rooms_json
+                                    FROM (
+                                        SELECT 
+                                            json_build_object(
+                                                'room_id', r.room_id,
+                                                'activation_time', r.activation_time,
+                                                'message_file', r.message_file,
+                                                'settings_file', r.settings_file,
+                                                'room_info', json_build_object(
+                                                    'room_name', ri.room_name,
+                                                    'description', ri.description,
+                                                    'room_url', ri.room_url
+                                                )
+                                            ) as room_data
+                                        FROM rooms.rooms r
+                                        JOIN rooms.rooms_info ri ON r.room_id = ri.room_id
+                                        JOIN rooms.user_and_room uar ON r.room_id = uar.room_id
+                                        JOIN rooms.user_roles ur ON uar.user_id = ur.user_id AND uar.room_id = ur.room_id
+                                        WHERE uar.user_id = %s and ur.user_role = 'Creator')
+                                        as rooms_data;""", (user_id,))
+            result = cursor.fetchone()
+            return result[0] if result and result[0] else []
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+
 
 
 
@@ -1939,26 +2063,26 @@ if __name__ == '__main__':
 # user_email = DataBase.get_user_by_email(another_user.email)
 # print(vars(user_email))
 
-#Для добавления по логину, почте и телефону
-# id = DataBase.add_auth(Auth(user_id=None, login='check', hash='123'))
-# id_another = DataBase.add_auth(Auth(user_id=None, login='catch', hash='456'))
-# id_third = DataBase.add_auth(Auth(user_id=None, login='oop', hash='789'))
-# id_forth = DataBase.add_auth(Auth(user_id=None, login='test', hash='000'))
+# #Для добавления по логину, почте и телефону
+# id = DataBase.add_auth(Auth(user_id=None, login='228', hash='енепоороп'))
+# id_another = DataBase.add_auth(Auth(user_id=None, login='ддддд', hash='пппппп5'))
+# id_third = DataBase.add_auth(Auth(user_id=None, login='цццццццц', hash='776по'))
+# id_forth = DataBase.add_auth(Auth(user_id=None, login='ззззззззз', hash='рпопл'))
 #
-# new_user = User(user_id=id, username='первый', email='апр@w.com', phone='8(800)555-35-35')
+# new_user = User(user_id=id, username='1й', email='у3@w.com', phone='123456789')
 # DataBase.add_user(new_user)
-# another_user = User(user_id=id_another, username='второй', email='дло@w.com', phone='8(800)555')
+# another_user = User(user_id=id_another, username='2', email='пиро@w.com', phone='56739209')
 # DataBase.add_user(another_user)
-# third_user = User(user_id=id_third, username='третий', email='ыва.com', phone='808080')
+# third_user = User(user_id=id_third, username='3й', email='рррррл.com', phone='456378')
 # DataBase.add_user(third_user)
-# forth_user = User(user_id=id_forth, username='четвертый', email='+сьб.com', phone='89160564578')
+# forth_user = User(user_id=id_forth, username='4й', email='+амрр.com', phone='8456728920')
 # DataBase.add_user(forth_user)
 #
-# second_id = DataBase.add_contact_by_login('catch', 'конфетка', new_user.user_id)
+# second_id = DataBase.add_contact_by_login('ддддд', 'яблоко', new_user.user_id)
 # print(second_id)
-# third_id = DataBase.add_contact_by_email(third_user.email, 'шоколадка',new_user.user_id)
+# third_id = DataBase.add_contact_by_email(third_user.email, 'банан',new_user.user_id)
 # print(third_id)
-# forth_id = DataBase.add_contact_by_phone(forth_user.phone, 'леденец', new_user.user_id)
+# forth_id = DataBase.add_contact_by_phone(forth_user.phone, 'киви', new_user.user_id)
 # print(forth_id)
 
 # id_want1 = DataBase.serch_contact_id(another_user.email)
@@ -1981,4 +2105,23 @@ if __name__ == '__main__':
     # db.update_user(new_user)
     # if new_user:
     #     print(vars(new_user))
+#
+# contacts = DataBase.get_contacts_for_user(105)
+# for element in contacts:
+#     print(vars(element))
 
+#проверка комнат для юзера
+# DataBase.add_user_and_room(105,35)
+# DataBase.add_user_and_room(105,36)
+# DataBase.add_user_and_room(105,37)
+# user_member = UserRole(35, 105, 'member')
+# DataBase.add_user_role(user_member)
+# user_creator = UserRole(36, 105, 'Creator')
+# DataBase.add_user_role(user_creator)
+# user_null = UserRole(37, 105)
+# DataBase.add_user_role(user_null)
+print(DataBase.get_created_rooms_for_user(105))
+
+
+# DataBase.add_user_and_room(106,37)
+#print(DataBase.get_created_rooms_for_user(106))
