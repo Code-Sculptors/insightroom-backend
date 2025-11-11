@@ -1334,6 +1334,40 @@ class DataBase:
                 conn.close()
 
     @staticmethod
+    def get_user_id_by_login(login:str) -> int | None:
+        """
+        Возвращает объект аутентификации по логину пользователя
+
+        Args:
+            login (str): логин пользователя, объект Auth которого нужно получить
+
+
+        Returns:
+            int: искомй ID пользователя, если он найден
+            None: если пользователь не найден
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id FROM technical.auth WHERE login = %s", (login,))
+            result = cursor.fetchone()
+            if result:
+                return result[0]
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+
+    @staticmethod
     def get_token(token: Tokens) -> Tokens | None:
         """
         Возвращает объект токена по его значению
@@ -2124,4 +2158,7 @@ if __name__ == '__main__':
 
 
 # DataBase.add_user_and_room(106,37)
-#print(DataBase.get_created_rooms_for_user(106))
+#print(DataBase.get_all_rooms_for_user(96))
+# auth = Auth(user_id=None, login='228', hash=None)
+# us_id = DataBase.get_user_id_by_login(auth.login)
+# print(us_id)
