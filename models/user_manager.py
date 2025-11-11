@@ -151,7 +151,39 @@ class UserManager:
             return DataBase.get_user_by_email(user_email)
         except DataBaseException as ex:
             return None
+
+    def get_auth(self, user_id: int) -> Auth:
+        '''Оболочка для DataBase.get_auth'''
+        try:
+            return DataBase.get_auth(user_id)
+        except DataBaseException as ex:
+            return None
         
+    def get_user_contacts(self, user_id: int) -> list[dict]:
+        '''Получение списка контактов в json-словаре'''
+        contacts : list[Contact] = DataBase.get_contacts_for_user(user_id)
+        answer = []
+        for contact in contacts:
+            initials = ''.join([x[0] for x in contact.contact_name.split()])[:2]
+            temp = {
+                'user_login': DataBase.get_auth(user_id).login,
+                'name': contact.contact_name,
+                'initials': initials
+            }
+            answer.append(temp)
+        return answer
+    
+    def add_contact(self, user_id: int, contact_name: str, contact_login: str) -> None:
+        '''Добавление контакта'''
+        contact_id = None
+        for auth in DataBase.get_all_auth():
+            if auth.login == contact_login:
+                contact_id = auth.user_id
+                break
+        if contact_id is None:
+            raise DataBaseException('Нет пользователя с таким логином')
+        DataBase.add_contact(Contact(user_id, contact_id, contact_name))
+
 
 DataBase.setup_db_connection(dbname='my_pi_db', host='10.147.19.249', user='db_api_user', password='QpKwDx2bnFSNaSpm0J72Dfw0')
 

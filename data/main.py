@@ -124,19 +124,6 @@ class DataBase:
         cls.password = password
         cls.port = port
 
-
-    def __init__(self, dbname = "my_test", host = "localhost", user = "aliska", password = "boss", port = "5432"):
-        if dbname:
-            DataBase.dbname = dbname
-        if host:
-            DataBase.host = host
-        if user:
-            DataBase.user = user
-        if password:
-            DataBase.password = password
-        if port:
-            DataBase.port = port
-
     @classmethod
     def get_connection(cls):
         """
@@ -631,7 +618,7 @@ class DataBase:
             cursor.execute("""
                 INSERT INTO users.contacts 
                 (user_id, contact_name, contact_id) 
-                VALUES (%s, %s)
+                VALUES (%s, %s, %s)
                 RETURNING contact_id
             """, (contact.user_id, contact.contact_name, contact.contact_id))
             contact_id = cursor.fetchone()[0]
@@ -1933,11 +1920,6 @@ class DataBase:
                 conn.close()
 
 
-
-
-
-
-
 if __name__ == '__main__':
     DataBase.setup_db_connection(dbname='my_pi_db', host='10.147.19.249', user='khomek',
                                  password='pos86de34@T')
@@ -2120,8 +2102,6 @@ if __name__ == '__main__':
 # DataBase.add_user_role(user_creator)
 # user_null = UserRole(37, 105)
 # DataBase.add_user_role(user_null)
-print(DataBase.get_created_rooms_for_user(105))
-
 
 # DataBase.add_user_and_room(106,37)
 #print(DataBase.get_created_rooms_for_user(106))

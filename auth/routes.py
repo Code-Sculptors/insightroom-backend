@@ -6,7 +6,7 @@ from flask_jwt_extended import (
 )
 from utils.jwt_utils import add_to_blacklist
 from models import user_manager, rooms_manager
-import time
+from datetime import datetime
 import os
 
 auth_bp = Blueprint('auth', __name__, template_folder=os.path.dirname(os.path.abspath(__file__)) + '/../../insightroom-frontend/pages')
@@ -137,19 +137,32 @@ def logout() -> Response:
     return response
 
 
-'''!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Блок работы с комнатами!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'''
+'''!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Блок работы с комнатами и прочим!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'''
 @auth_bp.route('/create-room', methods=['POST'])
 @jwt_required(optional=True)
 def create_room() -> Response:
     """Создание комнаты"""
     try:
         user_id = get_jwt_identity()
-        room_name = request.json.get('room_name')
-        description = request.json.get('room_description', None)
-        activation_time = request.json.get('activation_time', None)
+        room_name = request.json.get('room.name')
+        description = request.json.get('room.description', None)
+        activation_time = int(datetime.timestamp(datetime.fromisoformat(request.json.get('room.activation_time'))))
         url = rooms_manager.rooms_manager.create_room(user_id, room_name, description, activation_time)
         return jsonify({'url': url}), 200
     except Exception as ex:
         print(f'ERROR: {ex} in /create_room')
-        return jsonify({'error': ex}), 500
+        return jsonify({'error': str(ex)}), 500
     
+@auth_bp.route('/add_contact', methods=['POST'])
+@jwt_required(optional=True)
+def add_contact() -> Response:
+    """Добавление контакта"""
+    try:
+        user_id = get_jwt_identity()
+        contact_name = request.json.get('contact.name')
+        contact_login = request.json.get('contact.login')
+        user_manager.user_manager.add_contact(user_id, contact_name, contact_login)
+        return jsonify({'contact_name': contact_name, 'contact_login': contact_login}), 200
+    except Exception as ex:
+        print(f'ERROR: {ex} in /add_contact')
+        return jsonify({'error': str(ex)}), 500

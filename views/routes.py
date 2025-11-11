@@ -43,14 +43,24 @@ def cabinet_page() -> str:
     """Личный кабинет"""
     user = DataBase.get_user(get_jwt_identity())
     login = DataBase.get_auth(user_id=user.user_id).login
-    rooms = rooms_manager.rooms_manager.get_user_rooms(get_jwt_identity())
-    rooms = [room.to_dict() for room in rooms]
-    print(rooms)
+    
+    created_rooms = rooms_manager.rooms_manager.get_created_rooms(get_jwt_identity())
+    all_rooms = rooms_manager.rooms_manager.get_user_rooms(get_jwt_identity())
+    
+    contacts = user_manager.user_manager.get_user_contacts(get_jwt_identity())
     return render_template('personal-cabinet.html',
-                            user_name=user.username,
-                              user_login=login,
-                              sessions_count=len(rooms),
-                              current_meetings=rooms)
+                           user_name=user.username,
+                           user_login=login,
+                           
+                           sessions_count=len(created_rooms),
+                           current_meetings=created_rooms,
+
+                           all_meetings_count=len(all_rooms),
+                           all_meetings=all_rooms,
+
+                           contacts_count=len(contacts),
+                           contacts=contacts
+                        )
 
 @views_bp.route('/schedule-meeting')
 @jwt_required()
@@ -63,4 +73,3 @@ def schedule_meeting() -> str:
                             user_name=user.username,
                               user_login=login                             
                               )
-
