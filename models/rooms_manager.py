@@ -41,12 +41,15 @@ def validate_room_url(url, room_id, room_name, prefix="ir"):
     # Сравниваем
     return url == expected_url
 
+def check_activation_status(activation_time):
+    target_time = datetime.fromisoformat(activation_time)
+    return "Активно" if target_time <= datetime.now() else "Запланировано"
 
 class Rooms_manager():
     def __init__(self):
         pass
 
-    def create_room(self, user_id: int, room_name: str, description: str, activation_time: str) -> str:
+    def create_room(self, user_id: int, room_name: str, description: str, activation_time: str | int) -> str:
         """Функция для создания комнаты и всего, что с ней связано
         Args:
             user_id (int): ID создателя комнаты,
@@ -78,12 +81,34 @@ class Rooms_manager():
 
         return url
 
-    def get_user_rooms(self, user_id: int) -> list:
-        rooms = DataBase.get_all_rooms()
-        user_roles = DataBase.get_all_user_roles()
-        # user_roles = [user_role for user_role in user_roles if user_role.user_id == user_id]
-        rooms = list(filter(lambda x: x.room_id in [role.room_id for role in user_roles], rooms))
-        answer = [DataBase.get_room_info(room.room_id) for room in rooms]
+    def get_user_rooms(self, user_id: int) -> list[dict]:
+        rooms : list[dict] = DataBase.get_all_rooms_for_user(user_id)
+        answer = []
+        for room in rooms:
+            temp = {
+                'id': room['room_info']['room_url'],
+                'title': room['room_info']['room_name'],
+                'description': room['room_info']['description'],
+                'status': check_activation_status(room['activation_time']),
+                'date': room['activation_time'].split('T')[0],
+                'time': room['activation_time'].split('T')[1][:-3]
+            }
+            answer.append(temp)
+        return answer
+    
+    def get_created_rooms(self, user_id: int) -> list[dict]:
+        rooms : list[dict] = DataBase.get_created_rooms_for_user(user_id)
+        answer = []
+        for room in rooms:
+            temp = {
+                'id': room['room_info']['room_url'],
+                'title': room['room_info']['room_name'],
+                'description': room['room_info']['description'],
+                'status': check_activation_status(room['activation_time']),
+                'date': room['activation_time'].split('T')[0],
+                'time': room['activation_time'].split('T')[1][:-3]
+            }
+            answer.append(temp)
         return answer
 
 
