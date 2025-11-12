@@ -146,7 +146,11 @@ def create_room() -> Response:
         user_id = get_jwt_identity()
         room_name = request.json.get('room.name')
         description = request.json.get('room.description', None)
-        activation_time = int(datetime.timestamp(datetime.fromisoformat(request.json.get('room.activation_time'))))
+        if description == '(empty)': description = '';
+        if (time := request.json.get('room.activation_time')) == 'now':
+            activation_time = time
+        else:
+            activation_time = int(datetime.timestamp(datetime.fromisoformat(time)))
         url = rooms_manager.rooms_manager.create_room(user_id, room_name, description, activation_time)
         return jsonify({'url': url}), 200
     except Exception as ex:
