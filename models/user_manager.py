@@ -168,7 +168,8 @@ class UserManager:
             temp = {
                 'user_login': DataBase.get_auth(user_id).login,
                 'name': contact.contact_name,
-                'initials': initials
+                'initials': initials,
+                'id': contact.contact_id
             }
             answer.append(temp)
         return answer

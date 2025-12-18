@@ -197,3 +197,16 @@ def add_contact() -> Response:
     except Exception as ex:
         print(f'ERROR: {ex} in /add_contact')
         return jsonify({'error': str(ex)}), 500
+    
+@auth_bp.route('/edit_contact', methods=['PUT'])
+@jwt_required()
+def edit_contact() -> Response:
+    '''Изменение контакта'''
+    try:
+        contact_id = request.json.get('contact.id')
+        contact_name = request.json.get('contact.name')
+        rooms_manager.DataBase.update_contact(rooms_manager.Contact(contact_id=contact_id, contact_name=contact_name))
+        return jsonify({'contact_id': contact_id}), 200
+    except Exception as ex:
+        print(f'ERROR: {ex} in /edit_contact')
+        return jsonify({'error': str(ex)}), 500

@@ -593,9 +593,9 @@ class DataBase:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE users.contacts 
-                SET user_id=%s, contact_name=%s
+                SET contact_name=%s
                 WHERE contact_id=%s
-            """, (contact.user_id, contact.contact_name, contact.contact_id))
+            """, (contact.contact_name, contact.contact_id))
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)
