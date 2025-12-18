@@ -49,7 +49,9 @@ class RoomInfo:
             'room_name': self.room_name,
             'room_url': self.room_url
         }
-
+    
+    def __str__(self):
+        return f'RoomInfo(room_id={self.room_id}, description={self.description}, room_name={self.room_name}, room_url={self.room_url})'
 
 class Room:
     def __init__(self, room_id=None, activation_time=None, message_file=None, settings_file=None):
@@ -57,6 +59,9 @@ class Room:
         self.activation_time = activation_time
         self.message_file = message_file
         self.settings_file = settings_file
+
+    def __str__(self):
+        return f'Room(room_id={self.room_id}, activation_time={self.activation_time}, message_file={self.message_file}, settings_file={self.settings_file})'
 
 
 class UserRole:
@@ -830,9 +835,9 @@ class DataBase:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE rooms.rooms 
-                SET activation_time=TO_TIMESTAMP(%s), message_file=%s, settings_file=%s 
+                SET activation_time=%s
                 WHERE room_id=%s
-            """, (room.activation_time, room.message_file, room.settings_file, room.room_id))
+            """, (room.activation_time, room.room_id))
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)
@@ -928,6 +933,38 @@ class DataBase:
                 cursor.close()
             if conn:
                 conn.close()
+    
+    @staticmethod
+    def get_room_id_by_url(room_url: str) -> int | None:
+        """
+        Возвращает объект информации о комнате по его идентификатору
+
+        Args:
+            room_url (str): URL комнаты, ID которой нужно получить
+
+        Returns:
+            int: ID комнаты
+            None: если запись не найдена
+        """
+        conn = None
+        cursor = None
+        try:
+            conn = DataBase.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT room_id FROM rooms.rooms_info WHERE room_url = %s", (room_url,))
+            result = cursor.fetchone()[0]
+
+            if result:
+                return result
+            else:
+                return None
+        except Exception as ex:
+            raise DataBaseException(ex)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     @staticmethod
     def get_all_rooms_info() -> list[RoomInfo]:
@@ -972,9 +1009,9 @@ class DataBase:
             cursor = conn.cursor()
             cursor.execute("""
                    UPDATE rooms.rooms_info 
-                   SET description=%s, room_name=%s, room_url=%s 
+                   SET description=%s, room_name=%s
                    WHERE room_id=%s
-               """, (room_info.description, room_info.room_name, room_info.room_url, room_info.room_id))
+               """, (room_info.description, room_info.room_name, room_info.room_id))
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)

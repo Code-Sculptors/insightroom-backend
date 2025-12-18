@@ -111,5 +111,13 @@ class Rooms_manager():
             answer.append(temp)
         return answer
 
+    def refactor_room(self, room_id: int, room_name: str, description: str, activation_time: str | int):
+        updated_room = Room(room_id=room_id, activation_time=activation_time)
+        updated_room_info = RoomInfo(room_id=room_id, description=description, room_name=room_name)
+        DataBase.update_room(updated_room)
+        DataBase.update_room_info(updated_room_info)
+        print(updated_room, updated_room_info)
 
+    def get_room_id_by_url(self, room_url: str) -> int | None:
+        return DataBase.get_room_id_by_url(room_url)
 rooms_manager = Rooms_manager()

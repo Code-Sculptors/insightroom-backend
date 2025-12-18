@@ -156,7 +156,34 @@ def create_room() -> Response:
     except Exception as ex:
         print(f'ERROR: {ex} in /create_room')
         return jsonify({'error': str(ex)}), 500
-    
+
+
+@auth_bp.route('/refactor_room', methods=['PUT'])
+@jwt_required()
+def refactor_room() -> Response:
+    """Изменение комнаты"""
+    try:
+        room_url = request.json.get('room.id')
+        room_id = rooms_manager.rooms_manager.get_room_id_by_url(room_url)
+        room = rooms_manager.DataBase.get_room(room_id)
+        room_info = rooms_manager.DataBase.get_room_info(room_id)
+        room_info.room_name = request.json.get('room.name')
+        description = request.json.get('room.description', None)
+        if description == '(empty)': description = '';
+        if description: room_info.description = description
+        if (time := request.json.get('room.activation_time')) == 'T':
+            activation_time = None
+        else:
+            activation_time = time.replace('T', ' ')
+        if activation_time: room.activation_time = activation_time
+        rooms_manager.DataBase.update_room(room)
+        rooms_manager.DataBase.update_room_info(room_info)
+        return jsonify({'room_id': room_id}), 200
+    except Exception as ex:
+        print(f'ERROR: {ex} in /refactor_room')
+        return jsonify({'error': str(ex)}), 500
+
+
 @auth_bp.route('/add_contact', methods=['POST'])
 @jwt_required(optional=True)
 def add_contact() -> Response:
