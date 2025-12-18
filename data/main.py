@@ -705,6 +705,7 @@ class DataBase:
                 cursor.close()
             if conn:
                 conn.close()
+                
     @staticmethod
     def add_contact_by_phone(phone:str, contact_name:str, user_id:int) -> int|None:
         """
@@ -743,14 +744,14 @@ class DataBase:
         Удаляет контакт из базы данных
 
         Args:
-            contact (Contact): объект Contact с установленным contact_id для удаления
+            contact (Contact): объект Contact с установленным contact_id и user_id для удаления
         """
         conn = None
         cursor = None
         try:
             conn = DataBase.get_connection()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM users.contacts WHERE contact_id = %s", (contact.contact_id,))
+            cursor.execute("DELETE FROM users.contacts WHERE contact_id = %s AND user_id = %s", (contact.contact_id, contact.user_id))
             conn.commit()
         except Exception as ex:
             raise DataBaseException(ex)

@@ -210,3 +210,30 @@ def edit_contact() -> Response:
     except Exception as ex:
         print(f'ERROR: {ex} in /edit_contact')
         return jsonify({'error': str(ex)}), 500
+    
+@auth_bp.route('/delete-room', methods=['DELETE'])
+@jwt_required()
+def delete_room() -> Response:
+    '''Удаление комнаты'''
+    try:
+        room_url = request.json.get('room.id')
+        room_id = rooms_manager.rooms_manager.get_room_id_by_url(room_url)
+        rooms_manager.DataBase.delete_room(room_id)
+        return jsonify({'status': 'OK'}), 200
+    except Exception as ex:
+        print(f'ERROR: {ex} in /delete_room')
+        return jsonify({'error': str(ex)}), 500
+    
+
+@auth_bp.route('/delete-contact', methods=['DELETE'])
+@jwt_required()
+def delete_contact() -> Response:
+    '''Удаление контакта'''
+    try:
+        user_id = get_jwt_identity()
+        contact_id = request.json.get('contactId')
+        rooms_manager.DataBase.delete_contact(rooms_manager.Contact(user_id, contact_id))
+        return jsonify({'status': 'OK'}), 200
+    except Exception as ex:
+        print(f'ERROR: {ex} in /delete_contact')
+        return jsonify({'error': str(ex)}), 500
