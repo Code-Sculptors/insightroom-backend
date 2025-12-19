@@ -14,6 +14,10 @@ def conference_room(room_url):
         if user_id:
             user = DataBase.get_user(user_id)
             user_name = user.username if user else "Участник"
+            room_id = DataBase.get_room_id_by_url(room_url)
+            try:
+                DataBase.add_user_and_room(user_id, room_id)
+            except: pass
         
         return render_template('conference.html', 
                              room_url=room_url, 
@@ -25,6 +29,8 @@ def conference_room(room_url):
 @conferences_bp.route('/api/validate-room/<room_url>')
 def validate_room(room_url):
     try:
+        # Проверяем существование комнаты
+        # Здесь можно добавить логику проверки из rooms_manager
         return jsonify({
             'exists': True,
             'room_url': room_url
