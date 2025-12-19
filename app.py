@@ -2,14 +2,15 @@ import os
 from flask import Flask
 from auth.routes import auth_bp
 from views.routes import views_bp
-from conferences.routes import conferences_bp  # ← ДОБАВИТЬ
+from conferences.routes import conferences_bp
 from utils.jwt_utils import jwt_manager
 from utils.scheduler import start_cleanup_scheduler
 from flask_cors import CORS
-from flask_socketio import SocketIO  # ← ДОБАВИТЬ
+from flask_socketio import SocketIO
 
-app = Flask(__name__, template_folder=os.path.dirname(os.path.abspath(__file__)) + '../insightroom-frontend/pages', 
-            static_folder=os.path.dirname(os.path.abspath(__file__)) + '/../insightroom-frontend/static')
+app = Flask(__name__, 
+            template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'insightroom-frontend', 'pages'),
+            static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'insightroom-frontend', 'static'))
 
 # Конфигурация
 app.config['JWT_SECRET_KEY'] = 'QpKwDx2bnFSNaSpm0J72Dfw0'
@@ -23,6 +24,7 @@ app.config['JWT_COOKIE_CSRF_PROTECT'] = False
 app.config['JWT_COOKIE_SECURE'] = False
 app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
 app.config['JWT_REFRESH_COOKIE_PATH'] = '/'
+app.config['SECRET_KEY'] = 'your-secret-key-here'
 
 # Инициализация расширений
 jwt_manager.init_app(app)
@@ -37,15 +39,14 @@ CORS(app,
 # Регистрация blueprint'ов
 app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(views_bp)
-app.register_blueprint(conferences_bp) 
+app.register_blueprint(conferences_bp)
 
-# Инициализация WebSocket обработчиков ← ДОБАВИТЬ
-from conferences.sockets import init_socketio
-init_socketio(socketio)
+# Инициализация WebSocket обработчиков
+from conferences import sockets
+sockets.init_socketio(socketio)
 
 # Запуск фоновых задач
 start_cleanup_scheduler()
 
 if __name__ == '__main__':
-    # Запуск с поддержкой WebSocket ← ИЗМЕНИТЬ
     socketio.run(app, host='0.0.0.0', debug=True, ssl_context='adhoc')

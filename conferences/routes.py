@@ -7,9 +7,7 @@ from data.main import DataBase
 @conferences_bp.route('/conference/<room_url>')
 @jwt_required(optional=True)
 def conference_room(room_url):
-    """Страница видеоконференции"""
     try:
-        # Получаем информацию о комнате
         user_id = get_jwt_identity()
         user_name = "Участник"
         
@@ -26,10 +24,7 @@ def conference_room(room_url):
 
 @conferences_bp.route('/api/validate-room/<room_url>')
 def validate_room(room_url):
-    """Проверка существования комнаты"""
     try:
-        # Здесь можно добавить логику проверки комнаты в БД
-        # Пока возвращаем всегда успех для демонстрации
         return jsonify({
             'exists': True,
             'room_url': room_url
