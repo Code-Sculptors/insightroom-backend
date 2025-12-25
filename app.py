@@ -14,7 +14,7 @@ app = Flask(__name__,
 
 # Конфигурация
 app.config['JWT_SECRET_KEY'] = 'QpKwDx2bnFSNaSpm0J72Dfw0'
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 900
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 9000
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = 604800
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_COOKIE_SAMESITE'] = 'Lax'
@@ -49,4 +49,4 @@ sockets.init_socketio(socketio)
 start_cleanup_scheduler()
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', debug=True, ssl_context='adhoc')
+    socketio.run(app, host='26.183.47.113', debug=True, ssl_context='adhoc')
