@@ -33,18 +33,19 @@ def register() -> Response:
         ans = user_manager.user_manager.register_user(username, email, password, login, phone_number)
 
         success, result = ans
-        if success and result is str:
+        if success and result is not str:
             user_data = result
             access_token = create_access_token(
-                identity=user_data.user_id,
-                additional_claims={
-                    'verified': user_data.verified
-                }
+                identity=str(user_data.user_id)
             )
-            refresh_token = create_refresh_token(identity=user_data.user_id)
-            print(f"REG: {login}", access_token, refresh_token, sep='\n')
+            refresh_token = create_refresh_token(identity=str(user_data.user_id))
+            print(f"LOG: {login}", access_token, refresh_token, sep='\n')
 
-            response = redirect('/')
+            response = jsonify({
+                'message': 'Register successful',
+                'access_expires_in': 9000,  
+                'refresh_expires_in': 604800
+            })
             set_access_cookies(response, access_token)
             set_refresh_cookies(response, refresh_token)
             return response

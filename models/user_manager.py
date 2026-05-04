@@ -187,5 +187,6 @@ class UserManager:
 
 
 DataBase.setup_db_connection(dbname='my_pi_db', host='10.147.19.249', user='db_api_user', password='QpKwDx2bnFSNaSpm0J72Dfw0')
+#DataBase.setup_db_connection(dbname='my_pi_db', host='localhost', user='postgres', password='4417')
 
 user_manager = UserManager()

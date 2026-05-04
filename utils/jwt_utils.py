@@ -37,7 +37,7 @@ def invalid_token_callback(error) -> tuple[dict, int]:
     """Обработчик невалидного токена"""
     return {
         'error': 'invalid_token',
-        'message': 'Токен невалиден.'
+        'message': 'Invalid token'
     }, 401
 
 @jwt_manager.unauthorized_loader
